@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QApplication, QWidget, QPushButton
+from PySide6.QtWidgets import QApplication, QWidget, QPushButton,QMainWindow
 from PySide6  import  QtCore
 from PySide6.QtGui import *
 from PySide6.QtCore  import  QFile,QIODevice
@@ -16,13 +16,17 @@ cssBtnShortDisabled = "color: #000000;""border-radius: 15px;""background-color: 
 cssEtEditRiskDisabled = "color: #9F9F9F;""border: 2px solid #9F9F9F"
 cssEtEditRiskEnabled = "color: white;""border: 2px solid White"
 
-class UserInterface(QtCore.QObject):
+class UserInterface(QMainWindow):
+
+    __instance = None
 
     def __init__(self):
         super().__init__()
 
-        ui_file_name = "options_rifle_UI_2.ui"
+        ui_file_name = "ui_templates/options_rifle_UI_2.ui"
         ui_file = QFile(ui_file_name)
+
+        print("Started UI")
 
         if not ui_file.open(QIODevice.ReadOnly):
             print(f"Cannot open {ui_file_name}: {ui_file.errorString()}")
@@ -43,7 +47,6 @@ class UserInterface(QtCore.QObject):
 
         self.window.btn_editrisk.clicked.connect(self.clickedEditRisk)
 
-
         self.window.btn_execute.clicked.connect(self.clickedExecute)
 
         #inititalise Startup Parameters
@@ -59,6 +62,11 @@ class UserInterface(QtCore.QObject):
         
         self.window.btn_execute.setStyleSheet(cssBtnExecute)
 
+    @staticmethod
+    def get_instance():
+        if UserInterface.__instance is None:
+           UserInterface.__instance = UserInterface()
+        return UserInterface.__instance
 
     def show(self):
         if not self.window:
