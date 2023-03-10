@@ -1,8 +1,6 @@
 
 import sys
 import threading
-
-
 from PySide6.QtWidgets import QApplication, QWidget, QPushButton
 from PySide6.QtCore import QFile,QIODevice,Slot,QThread
 from PySide6.QtUiTools import QUiLoader
@@ -11,43 +9,47 @@ import ConnectKite
 from LoginWIndow import LoginWindow
 
 
-if QApplication.instance():
-    app = QApplication.instance()
-else:
-    app = QApplication(sys.argv)
+class OptionsRifleMain() : 
+    __instance = None
+
+    def __init__(self):
+        if QApplication.instance():
+            self.app = QApplication.instance()
+        else:
+            self.app = QApplication(sys.argv)
+        self.loginwindow = LoginWindow.get_instance()
+        self.userInterface = UserInterface.get_instance()
+        return
     
-loginwindow = LoginWindow.get_instance()
-userInterface = UserInterface.get_instance()
+    def startOptionsRifle(self) : 
+        print("Starting Options Rifle")
+        self.userInterface.show()
+        #QApplication.processEvents()
 
-class OptionsRifleThread(QThread):
-    def run(self):
-        userInterface.show()
-        QApplication.processEvents()
-        
-qrun = OptionsRifleThread()
+    def startLoginWidow(self) :
+        self.loginwindow.show()
 
-def startOptionsRifle() : 
-    print("Starting Options Rifle")
-    userInterface.show()
-    QApplication.processEvents()
-    #qrun.start()
+    def closeLoginWindow(self) :
+        self.loginwindow.close()   
 
-def startLoginWidow() :
-    loginwindow.show()
-
-def closeLoginWindow() :
-    loginwindow.close()   
+    @staticmethod
+    def get_instance():
+        if OptionsRifleMain.__instance is None:
+            OptionsRifleMain.__instance = OptionsRifleMain()
+            return OptionsRifleMain.__instance
 
 
 if __name__ == "__main__": 
 
     print ("Starting Application")
-    if ConnectKite.isUserLoggedIn() :  
-        startOptionsRifle()
-    else :
-        startLoginWidow()
+    optionsRifle = OptionsRifleMain.get_instance()
 
-    sys.exit(app.exec())
+    if ConnectKite.isUserLoggedIn() :  
+        optionsRifle.startOptionsRifle()
+    else :
+        optionsRifle.startLoginWidow()
+
+    sys.exit(optionsRifle.app.exec())
     
 
 

@@ -5,6 +5,7 @@ from PySide6.QtCore  import  QFile,QIODevice
 from PySide6.QtUiTools import QUiLoader
 import sys
 
+
 cssBtnEnabled = "background-color: #F3EF52;""color: #27292F;""border-radius: 15px;"
 cssBtnDisabled = "color: #757575;" "background-color: #27292F;" "border-radius: 15px;" "border: 2px solid #9F9F9F;"
 cssBtnExecute = "color: #000000;""background: #F3EF52;"#"border-radius: 15px;"
@@ -15,6 +16,7 @@ cssBtnShortEnabled = "color: #000000;""border-radius: 15px;""background-color: r
 cssBtnShortDisabled = "color: #000000;""border-radius: 15px;""background-color: rgba(255, 255, 255, 0);""border: 2px solid #9F9F9F;"
 cssEtEditRiskDisabled = "color: #9F9F9F;""border: 2px solid #9F9F9F"
 cssEtEditRiskEnabled = "color: white;""border: 2px solid White"
+
 
 class UserInterface(QMainWindow):
 
@@ -61,6 +63,9 @@ class UserInterface(QMainWindow):
         self.window.et_risk.setStyleSheet(cssEtEditRiskDisabled)
         
         self.window.btn_execute.setStyleSheet(cssBtnExecute)
+
+    
+
 
     @staticmethod
     def get_instance():
