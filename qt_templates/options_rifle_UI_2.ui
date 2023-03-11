@@ -34,7 +34,13 @@
   <property name="tabShape">
    <enum>QTabWidget::Rounded</enum>
   </property>
-  <widget class="QWidget" name="centralwidget">
+  <widget class="QWidget" name="MainWinodw2">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
    <property name="autoFillBackground">
     <bool>false</bool>
    </property>
@@ -198,6 +204,9 @@
     </property>
    </widget>
    <widget class="QPushButton" name="btn_bounce">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
     <property name="geometry">
      <rect>
       <x>230</x>
@@ -866,6 +875,28 @@ border-color:black;</string>
      </size>
     </property>
    </widget>
+   <widget class="QFrame" name="frame_disable">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>-40</x>
+      <y>-20</y>
+      <width>411</width>
+      <height>931</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background:rgba(0, 0, 0, 100);</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Plain</enum>
+    </property>
+   </widget>
    <zorder>btn_long</zorder>
    <zorder>btn_aggresive</zorder>
    <zorder>btn_defensive</zorder>
@@ -891,8 +922,13 @@ border-color:black;</string>
    <zorder>lv_trades</zorder>
    <zorder>label_trades</zorder>
    <zorder>btn_editrisk</zorder>
+   <zorder>frame_disable</zorder>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QStatusBar" name="statusbar">
+   <property name="styleSheet">
+    <string notr="true">color:#F3EF52;</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

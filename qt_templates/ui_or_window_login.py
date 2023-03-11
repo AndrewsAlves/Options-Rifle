@@ -34,13 +34,13 @@ class Ui_MainWindow(object):
         font.setPointSize(18)
         self.label.setFont(font)
         self.label.setStyleSheet(u"color:#F3EF52;")
-        self.pushButton = QPushButton(self.centralwidget)
-        self.pushButton.setObjectName(u"pushButton")
-        self.pushButton.setGeometry(QRect(140, 110, 131, 41))
+        self.btn_login = QPushButton(self.centralwidget)
+        self.btn_login.setObjectName(u"btn_login")
+        self.btn_login.setGeometry(QRect(140, 110, 131, 41))
         font1 = QFont()
         font1.setFamilies([u"Graphie"])
-        self.pushButton.setFont(font1)
-        self.pushButton.setStyleSheet(u"background:#F3EF52;")
+        self.btn_login.setFont(font1)
+        self.btn_login.setStyleSheet(u"background:#F3EF52;")
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -52,8 +52,8 @@ class Ui_MainWindow(object):
     # setupUi
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Login", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Options Rifle", None))
-        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Login To Zerodha", None))
+        self.btn_login.setText(QCoreApplication.translate("MainWindow", u"Login To Zerodha", None))
     # retranslateUi
 

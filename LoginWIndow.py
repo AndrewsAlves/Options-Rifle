@@ -5,29 +5,23 @@ from PySide6.QtCore  import  QFile,QIODevice
 from PySide6.QtUiTools import QUiLoader
 import sys
 import logging
-import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
-from kiteconnect import KiteConnect
-import OptionsRifleMain
 from PySide6.QtCore import QThread, Signal
 from UserInterface import UserInterface
+from KiteApi import KiteApi
+from Utils.Utilities import WorkerThread
+import time 
+
 
 logging.basicConfig(level=logging.DEBUG)
-
-API_KEY= "yzczdzxsmw9w9tq9"
-API_SECRET = "2k7oo9x1w0xl5g9789wl8j6v4u03lq0x"
-kite = KiteConnect(api_key=API_KEY)
 
 # Set up a web server to listen for incoming requests
 class RequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
-        # Parse the query parameters from the request URL
         query = urlparse(self.path).query
         params = parse_qs(query)
-
-        # Extract the request token from the query parameters
         request_token = params["request_token"][0]
 
         self.send_response(200)
@@ -35,20 +29,10 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"<html><body><h1>Authorization complete : You can close this window</h1></body></html>")
 
-        print(request_token)
-
-        # Generate the access token using the request token
-        data = kite.generate_session(request_token, api_secret=API_SECRET)
-
-        # Extract the access token from the data dictionary
-        access_token = data["access_token"]
-
-        # Set the access token in the KiteConnect object
-        kite.set_access_token(access_token)
-        print("access token :" + access_token)
-        print("Server is closed")
-
+        KiteApi.getInstance().generateSession(request_token)
         auth_server_thread.finished.emit()
+
+        print("Server is closed")
         server.shutdown()
 
     def do_POST(self) : 
@@ -67,6 +51,10 @@ class AuthServerThread(QThread):
 
 server = HTTPServer(("localhost", 8000), RequestHandler)
 auth_server_thread = AuthServerThread()       
+getInstrumentThread = WorkerThread(KiteApi.getInstance().getInstruments)
+
+                ### LOGIN WINDOW ###
+###--------------------------------------------------------###
 
 class LoginWindow(QMainWindow) : 
 
@@ -104,16 +92,23 @@ class LoginWindow(QMainWindow) :
         self.window.close()    
     
     def loginUser(self) : 
-        print("User is not logged in")
-        login_url = kite.login_url()
-        webbrowser.open_new(login_url)
-        auth_server_thread.finished.connect(self.openOptionsRifle)
+        KiteApi.getInstance().openLoginUrl()
+        auth_server_thread.finished.connect(self.loginFlowFinished)
         auth_server_thread.start()    
-
-    def openOptionsRifle(self):
-     self.close()
-     self.userInterface = UserInterface.get_instance()
-     self.userInterface.show()
+    
+    def loginFlowFinished(self):
+     print("Login Flow Finished")
+     ## Start getting everyday Instruments data and store it in local database
+     self.window.label_process.setText("Getting Instrument List for the Day...")   
+     getInstrumentThread.finished.connect(self.handleGetInstrumentResult)
+     getInstrumentThread.start()
+    
+    def handleGetInstrumentResult(self, result):
+        print("Starting Options Rifle...")
+        self.userInterface = UserInterface.get_instance()
+        self.userInterface.show()
+        self.close()
+        return 
 
     def clickedLogintoZerodha(self) : 
         self.loginUser()

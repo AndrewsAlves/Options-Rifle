@@ -41,6 +41,11 @@ class Ui_MainWindow(object):
         font1.setFamilies([u"Graphie"])
         self.btn_login.setFont(font1)
         self.btn_login.setStyleSheet(u"background:#F3EF52;")
+        self.label_2 = QLabel(self.centralwidget)
+        self.label_2.setObjectName(u"label_2")
+        self.label_2.setGeometry(QRect(40, 180, 321, 20))
+        self.label_2.setStyleSheet(u"color:white")
+        self.label_2.setAlignment(Qt.AlignCenter)
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -55,5 +60,6 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"Login", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"Options Rifle", None))
         self.btn_login.setText(QCoreApplication.translate("MainWindow", u"Login To Zerodha", None))
+        self.label_2.setText("")
     # retranslateUi
 

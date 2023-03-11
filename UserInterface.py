@@ -1,9 +1,11 @@
-from PySide6.QtWidgets import QApplication, QWidget, QPushButton,QMainWindow
+from PySide6.QtWidgets import QApplication, QWidget, QPushButton,QMainWindow,QFrame
 from PySide6  import  QtCore
 from PySide6.QtGui import *
 from PySide6.QtCore  import  QFile,QIODevice
 from PySide6.QtUiTools import QUiLoader
 import sys
+import logging
+from KiteApi import KiteApi
 
 
 cssBtnEnabled = "background-color: #F3EF52;""color: #27292F;""border-radius: 15px;"
@@ -16,6 +18,9 @@ cssBtnShortEnabled = "color: #000000;""border-radius: 15px;""background-color: r
 cssBtnShortDisabled = "color: #000000;""border-radius: 15px;""background-color: rgba(255, 255, 255, 0);""border: 2px solid #9F9F9F;"
 cssEtEditRiskDisabled = "color: #9F9F9F;""border: 2px solid #9F9F9F"
 cssEtEditRiskEnabled = "color: white;""border: 2px solid White"
+
+logging.basicConfig(level=logging.DEBUG)
+
 
 
 class UserInterface(QMainWindow):
@@ -39,6 +44,7 @@ class UserInterface(QMainWindow):
         ui_file.close()
         self.window.setWindowTitle("Options Rifle v1")
 
+
         ## initialise Button and its funtions
         self.window.btn_aggresive.clicked.connect(self.clickedAggresive)
         self.window.btn_defensive.clicked.connect(self.clickedDefensive)
@@ -57,6 +63,9 @@ class UserInterface(QMainWindow):
         self.window.spinner_ticker.addItem("BANKNIFTY")
         ##self.window.spinner_ticker.addItem("NIFTY")
 
+        self.enableOptionsRifleUi()
+        self.updateStatusBar()
+
         self.window.et_risk.setText("2500")
         self.window.et_risk.setEnabled(False)
         self.window.btn_editrisk.setIcon(QIcon('icons/btn_edit_risk.png'))
@@ -64,7 +73,28 @@ class UserInterface(QMainWindow):
         
         self.window.btn_execute.setStyleSheet(cssBtnExecute)
 
-    
+        KiteApi.getInstance().connetInitialTickerSockets(self.onTicks,
+                                                         self.onConnect,
+                                                         self.onClose,
+                                                         self.onError,
+                                                         self.onMessage,
+                                                         self.onReConnect,
+                                                         self.onNoReConnect,
+                                                         self.onOrderUpdate)
+
+
+    def disableOptionsRifleUI(self) :
+        self.window.MainWinodw2.setEnabled(False)
+        self.window.frame_disable.show()
+
+    def enableOptionsRifleUi(self) : 
+        self.window.MainWinodw2.setEnabled(True)
+        self.window.frame_disable.hide()    
+
+    def updateStatusBar(self, message = 'All Set :)') : 
+        self.window.statusbar.showMessage(message)
+
+
 
 
     @staticmethod
@@ -72,6 +102,9 @@ class UserInterface(QMainWindow):
         if UserInterface.__instance is None:
            UserInterface.__instance = UserInterface()
         return UserInterface.__instance
+
+    def updateQuote(self) : 
+        return
 
     def show(self):
         if not self.window:
@@ -129,4 +162,65 @@ class UserInterface(QMainWindow):
             self.window.et_risk.setStyleSheet(cssEtEditRiskEnabled)
 
         return    
+    
+    """Callbacks
+    ---------
+    In below examples `ws` is the currently initialised WebSocket object.
+    - `on_ticks(ws, ticks)` -  Triggered when ticks are recevied.
+        - `ticks` - List of `tick` object. Check below for sample structure.
+    - `on_close(ws, code, reason)` -  Triggered when connection is closed.
+        - `code` - WebSocket standard close event code (https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent)
+        - `reason` - DOMString indicating the reason the server closed the connection
+    - `on_error(ws, code, reason)` -  Triggered when connection is closed with an error.
+        - `code` - WebSocket standard close event code (https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent)
+        - `reason` - DOMString indicating the reason the server closed the connection
+    - `on_connect` -  Triggered when connection is established successfully.
+        - `response` - Response received from server on successful connection.
+    - `on_message(ws, payload, is_binary)` -  Triggered when message is received from the server.
+        - `payload` - Raw response from the server (either text or binary).
+        - `is_binary` - Bool to check if response is binary type.
+    - `on_reconnect(ws, attempts_count)` -  Triggered when auto reconnection is attempted.
+        - `attempts_count` - Current reconnect attempt number.
+    - `on_noreconnect(ws)` -  Triggered when number of auto reconnection attempts exceeds `reconnect_tries`.
+    - `on_order_update(ws, data)` -  Triggered when there is an order update for the connected user."""
+
+    #######   KITE CONNECT       ############
+    ####### ___________________ ############ 
+
+    def onTicks(self, ws, ticks) :
+        # Callback to receive ticks.
+        logging.debug("Ticks: {}".format(ticks))
+        for tick in ticks :
+            if tick['instrument_token'] == KiteApi.getInstance().getbnfSpotToken() :
+                self.window.label_spot.setText(str(tick['last_price']))
+            if tick['instrument_token'] == KiteApi.getInstance().getUpcomingbnfFutureToken() :
+                self.window.label_futures.setText(str(tick['last_price']))
+        
+        return
+    def onConnect(self, ws, response) :
+        print("Connect is givven")
+        niftyBankTk = KiteApi.getInstance().getbnfSpotToken()
+        bnfTk = KiteApi.getInstance().getUpcomingbnfFutureToken()
+        ws.subscribe([niftyBankTk, bnfTk])
+        ws.set_mode(ws.MODE_LTP ,[niftyBankTk, bnfTk])
+        return
+    def onClose(self, ws, code, reason) :
+        ws.stop()
+        return
+    def onError(self, ws, code, reason) :
+        self.updateStatusBar("Web socket Error...")
+        print("server error : " + reason)
+        return
+    def onMessage(self,ws, payload, isBinary) :
+        ##if not isBinary :
+         ##   print("message from kite server : " + payload)
+        return
+    def onReConnect(self, attemptCount) :
+        print("server reconnect attemps : " + attemptCount)
+        return
+    def onNoReConnect(self, ws) :
+        return
+    def onOrderUpdate(self, ws, data) :
+        return
+    
 
