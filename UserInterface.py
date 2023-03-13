@@ -6,6 +6,11 @@ from PySide6.QtUiTools import QUiLoader
 import sys
 import logging
 from KiteApi import KiteApi
+from Utils.Utilities import WorkerThread,WorkerLoopedThread,TickLooperThread
+import time
+import threading 
+
+
 
 
 cssBtnEnabled = "background-color: #F3EF52;""color: #27292F;""border-radius: 15px;"
@@ -28,6 +33,16 @@ class UserInterface(QMainWindow):
 
     def __init__(self):
         super().__init__()
+
+        self.tickraceLock = threading.Lock()
+        self.greeksThread = WorkerLoopedThread(KiteApi.ins().deriveOptionsGreeks, loopsEverySec = 1, 
+                                               startedMessage = "Started Greeks Calucations", 
+                                               stoppedMessage = "Stopped Greeks Calculations")
+        self.ticksThread = TickLooperThread(self.tickLooperThreadFunc, loopsEverySec = 0.25,
+                                            startedMessage = "Started Ticks process", 
+                                               stoppedMessage = "Stopped Ticks process")
+        
+
 
         ui_file_name = "ui_templates/options_rifle_UI_2.ui"
         ui_file = QFile(ui_file_name)
@@ -90,6 +105,10 @@ class UserInterface(QMainWindow):
                                                          self.onReConnect,
                                                          self.onNoReConnect,
                                                          self.onOrderUpdate)
+        
+        #self.greeksThread.start()
+        self.ticksThread.start()
+
 
 
     def disableOptionsRifleUI(self) :
@@ -109,7 +128,7 @@ class UserInterface(QMainWindow):
            UserInterface.__instance = UserInterface()
         return UserInterface.__instance
 
-    def updateQuote(self) : 
+    def updateUi(self) : 
         return
 
     def show(self):
@@ -200,23 +219,34 @@ class UserInterface(QMainWindow):
 
     def onTicks(self, ws, ticks) :
         # Callback to receive ticks.
-        logging.debug("Ticks: {}".format(ticks))
-        for tick in ticks :
-            
-            KiteApi.ins().tokensLtp[tick["instrument_token"]] = tick['last_price']
-
-            if tick['instrument_token'] == KiteApi.ins().getbnfSpotToken() :
-                KiteApi.ins().bnfLtp = tick['last_price']
-                self.window.label_spot.setText(str(KiteApi.ins().bnfLtp))
-            if tick['instrument_token'] == KiteApi.ins().getUpcomingbnfFutureToken() :
-                KiteApi.ins().bnfSpotLtp = tick['last_price']
-                self.window.label_futures.setText(str(KiteApi.ins().bnfSpotLtp))
-            self.window.label_future_diff.setText(str(KiteApi.ins().bnfLtp - KiteApi.ins().bnfSpotLtp))        
+        #logging.debug("Ticks: {}".format(ticks))
+        print("tick recived")
+        self.ticksThread.setTickReceived(ticks)
         return
     
+    def tickLooperThreadFunc(self, ticks) :
+        self.tickraceLock.acquire()
+        start_time = time.time()
+        for tick in ticks :
+            if tick['instrument_token'] == KiteApi.ins().getbnfSpotToken() :
+                KiteApi.ins().bnfSpotLtp = tick['last_price']
+                self.window.label_spot.setText(str(KiteApi.ins().bnfSpotLtp))
+            if tick['instrument_token'] == KiteApi.ins().getUpcomingbnfFutureToken() :
+                KiteApi.ins().bnfLtp = tick['last_price']
+                self.window.label_futures.setText(str(KiteApi.ins().bnfLtp))
+
+        preDiff = round(KiteApi.ins().bnfLtp - KiteApi.ins().bnfSpotLtp, 1)
+        self.window.label_future_diff.setText(str(preDiff))        
+    
+        KiteApi.ins().setLTPforRequiredTokens(ticks)
+
+        end_time = time.time()
+        time_taken = end_time - start_time
+        print(f"Time taken: {time_taken} seconds")
+        self.tickraceLock.release()
+
+
     def onConnect(self, ws, response) :
-        niftyBankTk = KiteApi.ins().getbnfSpotToken()
-        bnfTk = KiteApi.ins().getUpcomingbnfFutureToken()
         tokenList = KiteApi.ins().getAllRequiredInstrumentListTokens()
         ws.subscribe(tokenList)
         ws.set_mode(ws.MODE_LTP ,tokenList)
@@ -241,4 +271,8 @@ class UserInterface(QMainWindow):
     def onOrderUpdate(self, ws, data) :
         return
     
+
+   
+
+
 

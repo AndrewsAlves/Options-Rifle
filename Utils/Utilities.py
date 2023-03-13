@@ -1,4 +1,7 @@
 from PySide6.QtCore import QThread, Signal
+import datetime as dt
+import time
+import math
 
 class WorkerThread(QThread):
     finished = Signal(str)
@@ -13,3 +16,94 @@ class WorkerThread(QThread):
     def run(self):
         res = self.func(*self.args, **self.kwargs)
         self.finished.emit(res)
+
+
+class WorkerLoopedThread(QThread):
+    finished = Signal(str)
+    result = Signal()
+    stopped = Signal()
+
+    def __init__(self, func, *args, **kwargs):
+        super(WorkerLoopedThread, self).__init__()
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+        self.is_running = True
+        self.loopsEverySec = kwargs.get('loopsEverySec', 0)
+        self.startMessage = kwargs.get('startedMessage', " ")
+        self.stoppedMessage = kwargs.get('stoppedMessage', " ")
+
+
+    def run(self):
+        print(__class__.__name__ + " : " +  self.startMessage)
+        while self.is_running :
+            self.func()
+            #self.finished.emit(res)
+            time.sleep(self.loopsEverySec)
+
+        self.is_running = False
+
+    def stop(self) :
+        self.is_running = False
+        self.stopped.emit()
+        print(__class__.__name__ + " : " +  self.stoppedMessage)
+
+class TickLooperThread(QThread):
+    stopped = Signal()
+    UpdateUi = Signal(str)
+
+    def __init__(self, func, *args, **kwargs):
+        super(TickLooperThread, self).__init__()
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+        self.is_running = True
+        self.loopsEverySec = kwargs.get('loopsEverySec', 0)
+        self.startMessage = kwargs.get('startedMessage', " ")
+        self.stoppedMessage = kwargs.get('stoppedMessage', " ")
+        self.ticks = {}
+
+    def setTickReceived(self,ticks) :
+
+        self.ticks = ticks
+
+    def run(self):
+        print(__class__.__name__ + " : " +  self.startMessage)
+        while self.is_running :
+            self.func(self.ticks)
+            #self.finished.emit(res)
+            time.sleep(self.loopsEverySec)
+
+        self.is_running = False
+
+    def stop(self) :
+        self.is_running = False
+        self.stopped.emit()
+        print(__class__.__name__ + " : " +  self.stoppedMessage)
+
+
+def getTimetoExpirationInHours(expirtDatetime) : 
+    currentDatetime = dt.date.today()
+    time_to_expiry_hours = float((expirtDatetime - currentDatetime).total_seconds() / 3600)
+    return time_to_expiry_hours
+
+def getStrikePrice(ltp, ItmOTmStrikeLevel = 1, optionStrikeInterval = 100) :
+    rounded_ltp = round(ltp / 100) * 100
+    strikeSelectionPoint = ItmOTmStrikeLevel*optionStrikeInterval
+    if (ItmOTmStrikeLevel < 0) :
+        itm_strike_price = rounded_ltp + strikeSelectionPoint
+    else :
+        itm_strike_price = rounded_ltp - strikeSelectionPoint
+
+    return itm_strike_price
+
+def getPositionsSizing(stoploss, ltp, risk_per_trade, lotSize) :
+    # calculate risk per option
+    noOfUnitsPossible = risk_per_trade / stoploss
+    # calculate number of options
+    position_size = (int(noOfUnitsPossible) // lotSize) * lotSize
+    print("Position size:", position_size)
+    return position_size
+
+
+

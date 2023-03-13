@@ -4,6 +4,11 @@ import pandas as pd
 import datetime as dt
 import os
 from kiteconnect.ticker import KiteTicker
+import mibian
+import Utils.Utilities
+import threading
+import time 
+
 
 
 API_KEY= "yzczdzxsmw9w9tq9"
@@ -16,7 +21,18 @@ KEY_PE = "PE"
 KEY_FUT = "FUT"
 KEY_EQ = "EQ"
 
+KEY_LONG = "long"
+KEY_SHORT = "short"
+
 RISK_FREE_INTEREST_RATE = 6.5
+
+MARKET_OPEN_TIME = '09:00:00'
+MARKET_CLOSE_TIME = '15:30:00'
+
+BNF_STRIKE_INTERVAL = 100
+
+
+
 
 class KiteApi() :
     __instance = None
@@ -35,6 +51,9 @@ class KiteApi() :
         self.tokensLtp = {}
         self.optionsDf = None
         self.optionChain = None
+
+        self.optionsRaceLock = threading.Lock()
+        self.executionRaceLock = threading.Lock()
 
     def openLoginUrl(self) :
         webbrowser.open_new(self.kite.login_url())
@@ -87,8 +106,7 @@ class KiteApi() :
         return tokenList
     
     def setRequiredOptionsDf(self) : 
-        self.requiredOptionsDf = self.localRequirmentList.loc[(self.localRequirmentList['instrument_type'] == "CE") | (self.localRequirmentList['instrument_type'] == "PE")] 
-
+        self.optionsDf = self.localRequirmentList.loc[(self.localRequirmentList['instrument_type'] == "CE") | (self.localRequirmentList['instrument_type'] == "PE")] 
 
     def getInstrumentToken(self,name = "", instrumentType = KEY_EQ, expiry = "", strike = 0) :
         tokenId = 0
@@ -108,12 +126,30 @@ class KiteApi() :
             return 0
         
         return tokenId.iloc[0]
-
+    
+    def getSelectedStrikeOption(self,name = "", instrumentType = KEY_CE, expiry = "", strike = 0) :
+        df1 = self.localRequirmentList.loc[(self.localRequirmentList['name'] == name) & (self.localRequirmentList['instrument_type'] == instrumentType)]
+        df2 = df1.loc[(df1['expiry'] == expiry) & (df1['strike'] == strike)]
+        
+        if df2.size == 0:
+            return None
+        
+        return df2.iloc[0]
+    
     def getInstruments(self) :
         result = "Success"
 
+        yesterdayDateStr= (dt.date.today() - dt.timedelta(days=1)).strftime("%d-%m-%Y")
         todayDateStr = dt.date.today().strftime("%d-%m-%Y")
-        filename = todayDateStr+"_required_instrument_list.csv"
+
+        filename = yesterdayDateStr+"_required_instrument_list.csv"
+
+        now = dt.datetime.now()
+        eight_thirty_am = now.replace(hour=8, minute=30, second=0, microsecond=0)
+
+        if now > eight_thirty_am:
+            filename = todayDateStr+"_required_instrument_list.csv"
+
         requirmentsFilePath = "G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\"+filename
 
         if os.path.exists(requirmentsFilePath):
@@ -151,23 +187,159 @@ class KiteApi() :
 
         print(self.upcomingFutureExpiry)
         print(self.upcomingOptionsExpiry)
+
+        # Convert expiry colums into datatime format
+        self.localRequirmentList['expiry'] = pd.to_datetime(self.localRequirmentList['expiry'])
+        self.upcomingOptionsExpiry = pd.to_datetime(self.upcomingOptionsExpiry)
+        self.upcomingFutureExpiry = pd.to_datetime(self.upcomingFutureExpiry)
         
         self.localRequirmentList.to_csv("G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\" + filename, index= False)
         
         return result
     
+    def setOptionPrices(self, ticks) :
+        self.optionsRaceLock.acquire()
+
+        if self.optionsDf is None:
+            self.setRequiredOptionsDf()
+
+        if self.optionsDf.empty:
+            return
+
+        for tick in ticks :
+            for index, row in self.optionsDf.iterrows():
+                    if tick['instrument_token'] == row['instrument_token'] : 
+                        row['last_price'] = tick['last_price']
+        self.optionsRaceLock.release()
+
+    def setLTPforRequiredTokens(self, ticks) :
+        self.optionsRaceLock.acquire()
+        for tick in ticks:
+            self.tokensLtp[tick["instrument_token"]] = tick['last_price']
+        self.optionsRaceLock.release()
+
 
     def deriveOptionsGreeks(self) : 
 
-        if self.optionsDf == None:
+        if self.optionsDf is None:
             self.setRequiredOptionsDf()
 
+        if self.optionsDf.empty:
+            return
+
+        self.optionsRaceLock.acquire()
+
+        start_time = time.time()
+
+        for index, row in self.optionsDf.iterrows():
             
+            if row['last_price'] == 0 :
+                continue
+
+            time_obj = dt.datetime.strptime(MARKET_CLOSE_TIME, '%H:%M:%S').time()
+            timeToExpiration = dt.datetime.combine(row['expiry'], time_obj)
+
+            timetoExpirationInHours = Utils.Utilities.getTimetoExpirationInHours(timeToExpiration)
+
+            iv = 0
+            if row['instrument_type'] == KEY_CE :
+                c = mibian.BS([self.bnfSpotLtp
+                            , row['strike'], 
+                            RISK_FREE_INTEREST_RATE, 
+                            timetoExpirationInHours], 
+                            callPrice = row['last_price'])
+                iv = c.impliedVolatility
+            elif row['instrument_type'] == KEY_PE:    
+                c = mibian.BS([self.bnfSpotLtp
+                            , row['strike'], 
+                            RISK_FREE_INTEREST_RATE, 
+                            timetoExpirationInHours], 
+                            putPrice = row['last_price'])
+                iv = c.impliedVolatility
+                # Calculate Greeks
+
+            c = mibian.BS([self.bnfSpotLtp
+                            , row['strike'], 
+                            RISK_FREE_INTEREST_RATE, 
+                            timetoExpirationInHours], 
+                            volatility = iv)
+
+            if row['instrument_type'] == KEY_CE :
+                row['delta'] = c.callDelta
+                row['gammma'] = c.gamma
+                row['theta'] = c.callTheta
+                row['vega'] = c.vega
+                row['iv'] = c.impliedVolatility
+
+            elif row['instrument_type'] == KEY_PE :    
+                row['delta'] = c.callDelta
+                row['gammma'] = c.gamma
+                row['theta'] = c.callTheta
+                row['vega'] = c.vega
+                row['iv'] = c.impliedVolatility
+            
+        self.optionsDf.round(3)    
+            
+        end_time = time.time()
+        time_taken = end_time - start_time
+        print(f"Time taken: {time_taken} seconds")
+
+        self.optionsRaceLock.release()
+
+        return
+    
+
+    def executeTrade(self, type, SLSpot, maxRiskPerTrade) : 
+        self.executionRaceLock.acquire() 
+
+        ce_or_pe = KEY_CE if type != KEY_SHORT else KEY_PE
+
+        strike = Utils.Utilities.getStrikePrice(self.bnfSpotLtp)
+        df = self.getSelectedStrikeOption(KEY_BANKNIFTY_FUT, ce_or_pe, self.upcomingOptionsExpiry, strike)
+        
+        instrumentType = df['instrument_type'][0]
+        expiry = df['expiry'][0]
+        lotSize = df['lot_size'][0]
+        ltp = self.tokensLtp[df['instrument_token'][0]]
+
+        time_obj = dt.datetime.strptime(MARKET_CLOSE_TIME, '%H:%M:%S').time()
+        timeToExpiration = dt.datetime.combine(expiry, time_obj)
+        timetoExpirationInHours = Utils.Utilities.getTimetoExpirationInHours(timeToExpiration)
+
+        iv = 0
+        if instrumentType == KEY_CE :
+                c = mibian.BS([self.bnfSpotLtp,
+                            strike, 
+                            RISK_FREE_INTEREST_RATE, 
+                            timetoExpirationInHours], 
+                            callPrice = ltp)
+                iv = c.impliedVolatility
+        elif instrumentType == KEY_PE:    
+            c = mibian.BS([self.bnfSpotLtp,
+                        strike, 
+                        RISK_FREE_INTEREST_RATE, 
+                        timetoExpirationInHours], 
+                        putPrice = ltp)
+            iv = c.impliedVolatility
+
+        c = mibian.BS([self.bnfSpotLtp, 
+                        strike, 
+                        RISK_FREE_INTEREST_RATE, 
+                        timetoExpirationInHours], 
+                        volatility = iv)
+
+
+        slNormal = SLSpot * float(c.callDelta)
+
+        ### SL based on future IV drop 
+        ivDropbuffer = (c.vega / 100) * 25
+        slSpecial = slNormal + ((c.vega / 100) * 25)
 
         
 
 
-        return
+
+
 
 
 

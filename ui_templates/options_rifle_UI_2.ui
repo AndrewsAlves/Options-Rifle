@@ -665,14 +665,16 @@ border-color:black;</string>
     <property name="font">
      <font>
       <family>Graphie</family>
-      <pointsize>12</pointsize>
+      <pointsize>10</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
      </font>
     </property>
     <property name="styleSheet">
      <string notr="true">color:white</string>
     </property>
     <property name="text">
-     <string>45000</string>
+     <string>0.0</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_futures">
@@ -687,14 +689,16 @@ border-color:black;</string>
     <property name="font">
      <font>
       <family>Graphie</family>
-      <pointsize>12</pointsize>
+      <pointsize>10</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
      </font>
     </property>
     <property name="styleSheet">
      <string notr="true">color:white</string>
     </property>
     <property name="text">
-     <string>45150</string>
+     <string>0.0</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_label_futures">
@@ -730,14 +734,14 @@ border-color:black;</string>
     <property name="font">
      <font>
       <family>Graphie</family>
-      <pointsize>12</pointsize>
+      <pointsize>10</pointsize>
      </font>
     </property>
     <property name="styleSheet">
      <string notr="true">color:white</string>
     </property>
     <property name="text">
-     <string>150</string>
+     <string>0.0</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_label_futures_diff">
