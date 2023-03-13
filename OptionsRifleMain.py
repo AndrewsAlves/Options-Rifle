@@ -4,7 +4,6 @@ from PySide6.QtWidgets import QApplication, QWidget, QPushButton
 from PySide6.QtCore import QFile,QIODevice,Slot,QThread
 from PySide6.QtUiTools import QUiLoader
 from UserInterface import UserInterface
-import ConnectKite
 from LoginWIndow import LoginWindow
 
 
@@ -24,6 +23,7 @@ class OptionsRifleMain() :
             OptionsRifleMain.__instance = OptionsRifleMain()
             return OptionsRifleMain.__instance
 
+
 if __name__ == "__main__": 
 
     print ("Starting Application")
@@ -33,6 +33,7 @@ if __name__ == "__main__":
 
     sys.exit(optionsRifle.app.exec())
     
+
 
 
         

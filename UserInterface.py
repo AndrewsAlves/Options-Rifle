@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QApplication, QWidget, QPushButton,QMainWindow,QFrame
+from PySide6.QtWidgets import QApplication, QWidget, QPushButton,QMainWindow,QFrame,QLabel
 from PySide6  import  QtCore
 from PySide6.QtGui import *
 from PySide6.QtCore  import  QFile,QIODevice
@@ -22,7 +22,6 @@ cssEtEditRiskEnabled = "color: white;""border: 2px solid White"
 logging.basicConfig(level=logging.DEBUG)
 
 
-
 class UserInterface(QMainWindow):
 
     __instance = None
@@ -42,8 +41,14 @@ class UserInterface(QMainWindow):
         self.loader = QUiLoader()
         self.window = self.loader.load(ui_file)
         ui_file.close()
-        self.window.setWindowTitle("Options Rifle v1")
+        self.window.setWindowTitle("Options Rifle")
+        self.window.setWindowIcon(QIcon("icons/icon_options_rifle_small.png"))
 
+        #create Overlay frame to stop accessing Button if some process or Error in the Process
+        self.overlay_frame = QFrame(self.window)
+        self.overlay_frame.setFixedSize(self.window.size())
+        self.overlay_frame.setStyleSheet('background-color: rgba(0, 0, 0, 100);')
+        self.overlay_frame.hide()
 
         ## initialise Button and its funtions
         self.window.btn_aggresive.clicked.connect(self.clickedAggresive)
@@ -53,9 +58,13 @@ class UserInterface(QMainWindow):
         self.window.btn_long.clicked.connect(self.clickedLong)
         self.window.btn_short.clicked.connect(self.clickedShort)
 
+        #this button is a transparent button
+        self.window.btn_trans_label_Fut.clicked.connect(self.setFuturesSLInSpin)
+
         self.window.btn_editrisk.clicked.connect(self.clickedEditRisk)
 
         self.window.btn_execute.clicked.connect(self.clickedExecute)
+
 
         #inititalise Startup Parameters
         self.clickedAggresive()
@@ -73,7 +82,7 @@ class UserInterface(QMainWindow):
         
         self.window.btn_execute.setStyleSheet(cssBtnExecute)
 
-        KiteApi.getInstance().connetInitialTickerSockets(self.onTicks,
+        KiteApi.ins().connetInitialTickerSockets(self.onTicks,
                                                          self.onConnect,
                                                          self.onClose,
                                                          self.onError,
@@ -85,17 +94,14 @@ class UserInterface(QMainWindow):
 
     def disableOptionsRifleUI(self) :
         self.window.MainWinodw2.setEnabled(False)
-        self.window.frame_disable.show()
+        self.overlay_frame.show()
 
     def enableOptionsRifleUi(self) : 
         self.window.MainWinodw2.setEnabled(True)
-        self.window.frame_disable.hide()    
+        self.overlay_frame.hide()
 
     def updateStatusBar(self, message = 'All Set :)') : 
         self.window.statusbar.showMessage(message)
-
-
-
 
     @staticmethod
     def get_instance():
@@ -120,7 +126,6 @@ class UserInterface(QMainWindow):
         return
 
     def clickedDefensive(self) :
-
         self.window.btn_aggresive.setStyleSheet(cssBtnDisabled)
         self.window.btn_defensive.setStyleSheet(cssBtnEnabled)
         self.window.btn_bounce.setStyleSheet(cssBtnDisabled)
@@ -145,6 +150,12 @@ class UserInterface(QMainWindow):
         self.window.btn_long.setIcon(QIcon('icons/btn_long_disabled.png'))
         self.window.btn_short.setIcon(QIcon('icons/btn_short_enabled.png'))
         return 
+    
+    def setFuturesSLInSpin(self) :
+        print("clicked futures spot")
+        self.window.spin_stoploss.setValue(KiteApi.ins().bnfLtp)
+        return
+
     def clickedTrades(self):
         return     
     def clickedPnLChart(self):
@@ -191,18 +202,25 @@ class UserInterface(QMainWindow):
         # Callback to receive ticks.
         logging.debug("Ticks: {}".format(ticks))
         for tick in ticks :
-            if tick['instrument_token'] == KiteApi.getInstance().getbnfSpotToken() :
-                self.window.label_spot.setText(str(tick['last_price']))
-            if tick['instrument_token'] == KiteApi.getInstance().getUpcomingbnfFutureToken() :
-                self.window.label_futures.setText(str(tick['last_price']))
-        
+            
+            KiteApi.ins().tokensLtp[tick["instrument_token"]] = tick['last_price']
+
+            if tick['instrument_token'] == KiteApi.ins().getbnfSpotToken() :
+                KiteApi.ins().bnfLtp = tick['last_price']
+                self.window.label_spot.setText(str(KiteApi.ins().bnfLtp))
+            if tick['instrument_token'] == KiteApi.ins().getUpcomingbnfFutureToken() :
+                KiteApi.ins().bnfSpotLtp = tick['last_price']
+                self.window.label_futures.setText(str(KiteApi.ins().bnfSpotLtp))
+            self.window.label_future_diff.setText(str(KiteApi.ins().bnfLtp - KiteApi.ins().bnfSpotLtp))        
         return
+    
     def onConnect(self, ws, response) :
-        print("Connect is givven")
-        niftyBankTk = KiteApi.getInstance().getbnfSpotToken()
-        bnfTk = KiteApi.getInstance().getUpcomingbnfFutureToken()
-        ws.subscribe([niftyBankTk, bnfTk])
-        ws.set_mode(ws.MODE_LTP ,[niftyBankTk, bnfTk])
+        niftyBankTk = KiteApi.ins().getbnfSpotToken()
+        bnfTk = KiteApi.ins().getUpcomingbnfFutureToken()
+        tokenList = KiteApi.ins().getAllRequiredInstrumentListTokens()
+        ws.subscribe(tokenList)
+        ws.set_mode(ws.MODE_LTP ,tokenList)
+
         return
     def onClose(self, ws, code, reason) :
         ws.stop()

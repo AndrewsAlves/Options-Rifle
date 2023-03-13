@@ -29,7 +29,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"<html><body><h1>Authorization complete : You can close this window</h1></body></html>")
 
-        KiteApi.getInstance().generateSession(request_token)
+        KiteApi.ins().generateSession(request_token)
         auth_server_thread.finished.emit()
 
         print("Server is closed")
@@ -51,7 +51,7 @@ class AuthServerThread(QThread):
 
 server = HTTPServer(("localhost", 8000), RequestHandler)
 auth_server_thread = AuthServerThread()       
-getInstrumentThread = WorkerThread(KiteApi.getInstance().getInstruments)
+getInstrumentThread = WorkerThread(KiteApi.ins().getInstruments)
 
                 ### LOGIN WINDOW ###
 ###--------------------------------------------------------###
@@ -92,7 +92,7 @@ class LoginWindow(QMainWindow) :
         self.window.close()    
     
     def loginUser(self) : 
-        KiteApi.getInstance().openLoginUrl()
+        KiteApi.ins().openLoginUrl()
         auth_server_thread.finished.connect(self.loginFlowFinished)
         auth_server_thread.start()    
     

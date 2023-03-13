@@ -16,6 +16,8 @@ KEY_PE = "PE"
 KEY_FUT = "FUT"
 KEY_EQ = "EQ"
 
+RISK_FREE_INTEREST_RATE = 6.5
+
 class KiteApi() :
     __instance = None
 
@@ -27,6 +29,12 @@ class KiteApi() :
         self.bnfSpotToken = 0
         self.bnfFuturesToken = 0
         self.ticker = None
+
+        self.bnfLtp= 0
+        self.bnfSpotLtp = 0
+        self.tokensLtp = {}
+        self.optionsDf = None
+        self.optionChain = None
 
     def openLoginUrl(self) :
         webbrowser.open_new(self.kite.login_url())
@@ -42,7 +50,7 @@ class KiteApi() :
         return
 
     @staticmethod
-    def getInstance() :
+    def ins() :
         if KiteApi.__instance is None:
            KiteApi.__instance = KiteApi()
         return KiteApi.__instance
@@ -73,6 +81,15 @@ class KiteApi() :
         self.bnfFuturesToken = int(self.getInstrumentToken(name = "BANKNIFTY", instrumentType=KEY_FUT, expiry=self.upcomingFutureExpiry))
         return self.bnfFuturesToken
     
+    def getAllRequiredInstrumentListTokens(self) :
+        tokenList = [int(x) for x in self.localRequirmentList['instrument_token'].tolist()]
+        print(tokenList)
+        return tokenList
+    
+    def setRequiredOptionsDf(self) : 
+        self.requiredOptionsDf = self.localRequirmentList.loc[(self.localRequirmentList['instrument_type'] == "CE") | (self.localRequirmentList['instrument_type'] == "PE")] 
+
+
     def getInstrumentToken(self,name = "", instrumentType = KEY_EQ, expiry = "", strike = 0) :
         tokenId = 0
         if instrumentType == KEY_EQ : 
@@ -138,6 +155,19 @@ class KiteApi() :
         self.localRequirmentList.to_csv("G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\" + filename, index= False)
         
         return result
+    
+
+    def deriveOptionsGreeks(self) : 
+
+        if self.optionsDf == None:
+            self.setRequiredOptionsDf()
+
+            
+
+        
+
+
+        return
 
 
 
