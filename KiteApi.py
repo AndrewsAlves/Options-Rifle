@@ -8,7 +8,8 @@ import mibian
 import Utils.Utilities
 import threading
 import time 
-
+from Model.Trade import Trade
+import logging
 
 
 API_KEY= "yzczdzxsmw9w9tq9"
@@ -31,7 +32,14 @@ MARKET_CLOSE_TIME = '15:30:00'
 
 BNF_STRIKE_INTERVAL = 100
 
+MAXIMUM_STOPLOSS_SPOT = 200
 
+ORDER_PLACED = "orderplaced"
+ORDER_ERROR = "ordererror"
+ORDER_ERROR_0_POSITION_SIZING = "ordererror_0_position_sizing"
+
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 class KiteApi() :
@@ -55,6 +63,11 @@ class KiteApi() :
         self.optionsRaceLock = threading.Lock()
         self.executionRaceLock = threading.Lock()
 
+        self.riskPerTrade = 0
+        self.currentTradePosition = None
+        self.tradesList = []
+        self.finalPnL= 0.0
+
     def openLoginUrl(self) :
         webbrowser.open_new(self.kite.login_url())
         return 
@@ -63,7 +76,7 @@ class KiteApi() :
         data = self.kite.generate_session(requestToken, api_secret=API_SECRET)
         access_token = data["access_token"]
         self.kite.set_access_token(access_token)
-        self.ticker = KiteTicker(API_KEY, access_token=access_token)
+        self.ticker = KiteTicker(API_KEY, access_token=access_token, reconnect=True, reconnect_max_delay=5,reconnect_max_tries=100,connect_timeout=300)
         print("Request Token : " + requestToken)
         print("Access Token : " + access_token)
         return
@@ -136,11 +149,20 @@ class KiteApi() :
         
         return df2.iloc[0]
     
-    def getInstruments(self) :
+    def getInstrumentsAndTrades(self) :
         result = "Success"
 
-        yesterdayDateStr= (dt.date.today() - dt.timedelta(days=1)).strftime("%d-%m-%Y")
         todayDateStr = dt.date.today().strftime("%d-%m-%Y")
+        filename = todayDateStr + "trades_log.csv"
+        tradeFilePath = "G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\trades_log\\"+filename
+
+        if os.path.exists(tradeFilePath) :
+           tradeDf =  pd.read_csv(tradeFilePath, parse_dates = ['entry_time', 'exit_time'])
+           self.tradesList = tradeDf.to_dict('records')
+           self.finalPnL =  sum(trade['pnl'] for trade in self.tradesList)
+
+
+        yesterdayDateStr= (dt.date.today() - dt.timedelta(days=1)).strftime("%d-%m-%Y")
 
         filename = yesterdayDateStr+"_required_instrument_list.csv"
 
@@ -152,8 +174,10 @@ class KiteApi() :
 
         requirmentsFilePath = "G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\"+filename
 
+        ### Get todays trades if file exits
+
         if os.path.exists(requirmentsFilePath):
-            self.localRequirmentList = pd.read_csv(requirmentsFilePath, parse_dates= True)
+            self.localRequirmentList = pd.read_csv(requirmentsFilePath, parse_dates = ['expiry'])
             self.upcomingFutureExpiry = self.localRequirmentList.loc[self.localRequirmentList['instrument_type'] == "FUT"]['expiry'].min()
             self.upcomingOptionsExpiry = self.localRequirmentList.loc[(self.localRequirmentList['instrument_type'] == "CE") | (self.localRequirmentList['instrument_type'] == "PE")]['expiry'].min()
             print(self.upcomingFutureExpiry)
@@ -197,6 +221,13 @@ class KiteApi() :
         
         return result
     
+    
+    def setLTPforRequiredTokens(self, ticks) :
+        self.optionsRaceLock.acquire()
+        for tick in ticks:
+            self.tokensLtp[tick["instrument_token"]] = tick['last_price']
+        self.optionsRaceLock.release()
+
     def setOptionPrices(self, ticks) :
         self.optionsRaceLock.acquire()
 
@@ -210,14 +241,7 @@ class KiteApi() :
             for index, row in self.optionsDf.iterrows():
                     if tick['instrument_token'] == row['instrument_token'] : 
                         row['last_price'] = tick['last_price']
-        self.optionsRaceLock.release()
-
-    def setLTPforRequiredTokens(self, ticks) :
-        self.optionsRaceLock.acquire()
-        for tick in ticks:
-            self.tokensLtp[tick["instrument_token"]] = tick['last_price']
-        self.optionsRaceLock.release()
-
+        self.optionsRaceLock.release()    
 
     def deriveOptionsGreeks(self) : 
 
@@ -289,31 +313,52 @@ class KiteApi() :
         return
     
 
-    def executeTrade(self, type, SLSpot, maxRiskPerTrade) : 
+    def executeTrade(self, type, SLSpot, maxRiskPerTrade, stg) : 
+
+        start_time = time.time()
         self.executionRaceLock.acquire() 
 
         ce_or_pe = KEY_CE if type != KEY_SHORT else KEY_PE
 
         strike = Utils.Utilities.getStrikePrice(self.bnfSpotLtp)
-        df = self.getSelectedStrikeOption(KEY_BANKNIFTY_FUT, ce_or_pe, self.upcomingOptionsExpiry, strike)
+
+        try :
+            df = self.getSelectedStrikeOption(KEY_BANKNIFTY_FUT, ce_or_pe, self.upcomingOptionsExpiry, strike)
+            if df is None :
+                self.logging.info("ERROR : Retrived dataframe empty : {}".format(e.message))
+                return ORDER_ERROR
+            
+        except Exception as e:
+           self.executionRaceLock.release() 
+           end_time = time.time()
+           time_taken = end_time - start_time
+           print(f"Time taken to Place order: {time_taken} seconds")
+           print("ERROR : Retrive Selected option From datafrom")
+           return ORDER_ERROR
         
-        instrumentType = df['instrument_type'][0]
-        expiry = df['expiry'][0]
-        lotSize = df['lot_size'][0]
-        ltp = self.tokensLtp[df['instrument_token'][0]]
+        print(df)
+        
+        tickerToken = df['instrument_token']
+        tradingSymbol = df['tradingsymbol']
+        instrumentType = df['instrument_type']
+        expiry = df['expiry']
+        lotSize = df['lot_size']
+        ltp = self.tokensLtp[tickerToken]
+
+        slSpotPoints = int(self.bnfLtp - SLSpot) if type != KEY_SHORT else int(SLSpot - self.bnfLtp)
 
         time_obj = dt.datetime.strptime(MARKET_CLOSE_TIME, '%H:%M:%S').time()
         timeToExpiration = dt.datetime.combine(expiry, time_obj)
-        timetoExpirationInHours = Utils.Utilities.getTimetoExpirationInHours(timeToExpiration)
+        timetoExpirationInHours = Utils.Utilities.getTimetoExpirationInHoursFromDays(timeToExpiration)
 
         iv = 0
         if instrumentType == KEY_CE :
-                c = mibian.BS([self.bnfSpotLtp,
-                            strike, 
-                            RISK_FREE_INTEREST_RATE, 
-                            timetoExpirationInHours], 
-                            callPrice = ltp)
-                iv = c.impliedVolatility
+            c = mibian.BS([self.bnfSpotLtp,
+                        strike, 
+                        RISK_FREE_INTEREST_RATE, 
+                        timetoExpirationInHours], 
+                        callPrice = ltp)
+            iv = c.impliedVolatility
         elif instrumentType == KEY_PE:    
             c = mibian.BS([self.bnfSpotLtp,
                         strike, 
@@ -322,18 +367,98 @@ class KiteApi() :
                         putPrice = ltp)
             iv = c.impliedVolatility
 
+        
         c = mibian.BS([self.bnfSpotLtp, 
                         strike, 
                         RISK_FREE_INTEREST_RATE, 
                         timetoExpirationInHours], 
                         volatility = iv)
-
-
-        slNormal = SLSpot * float(c.callDelta)
-
-        ### SL based on future IV drop 
+        
+        """ SL based on future IV drop 
         ivDropbuffer = (c.vega / 100) * 25
-        slSpecial = slNormal + ((c.vega / 100) * 25)
+        slSpecial = slNormal + ((c.vega / 100) * 25)"""
+
+        slPoints = int(round(slSpotPoints * float(c.callDelta)))
+        qty = Utils.Utilities.getPositionsSizing(slPoints, maxRiskPerTrade,lotSize)
+
+        if qty == 0 :
+            self.executionRaceLock.release() 
+            end_time = time.time()
+            time_taken = end_time - start_time
+            print(f"Time taken to Place order: {time_taken} seconds")
+            print("ERROR : Quantity Not satisfied with Risk per trade and Stoploss")
+
+            return ORDER_ERROR_0_POSITION_SIZING
+
+        # Place an order
+        try:
+
+
+            order_id = self.kite.place_order(tradingsymbol=tradingSymbol,
+                                        exchange=self.kite.EXCHANGE_NFO,
+                                        transaction_type=self.kite.TRANSACTION_TYPE_BUY,
+                                        quantity= qty,
+                                        variety=self.kite.VARIETY_REGULAR,
+                                        order_type=self.kite.ORDER_TYPE_MARKET,
+                                        product=self.kite.PRODUCT_MIS,
+                                        validity=self.kite.VALIDITY_DAY)
+            
+            
+        except Exception as e:
+           self.executionRaceLock.release() 
+           print("ERROR : Order Placing Failed Due to an Kite Exception" )
+           end_time = time.time()
+           time_taken = end_time - start_time
+           print(f"Time taken to Place order: {time_taken} seconds")
+           return ORDER_ERROR
+        
+        self.currentTradePosition = Trade(order_id, tickerToken, type, stg, tradingSymbol, qty, ltp, slPoints)
+        logging.info("Order placed. ID is: {}".format(order_id))
+
+        self.executionRaceLock.release() 
+        end_time = time.time()
+        time_taken = end_time - start_time
+        print(f"Time taken to Place order: {time_taken} seconds")
+        return ORDER_PLACED 
+    
+
+    def exitCurrentPosition(self) :
+        # Place an order
+        trade = self.currentTradePosition
+        try:
+            order_id = self.kite.place_order(tradingsymbol=trade.tickerSymbol,
+                                        exchange=self.kite.EXCHANGE_NFO,
+                                        transaction_type=self.kite.TRANSACTION_TYPE_BUY,
+                                        quantity= trade.qty,
+                                        variety=self.kite.VARIETY_REGULAR,
+                                        order_type=self.kite.ORDER_TYPE_MARKET,
+                                        product=self.kite.PRODUCT_MIS,
+                                        validity=self.kite.VALIDITY_DAY)
+            
+            self.currentTradePosition.exitOrderId = order_id
+
+            logging.info("Order placed. ID is: {}".format(order_id))
+
+            return ORDER_PLACED 
+        except Exception as e:
+           print("Order Placing Failed Due to an exception" )
+           return ORDER_ERROR
+
+
+      
+
+    def addLastTradeToTradesList(self) : 
+        self.tradesList.append(self.currentTradePosition.getAsDict())
+        self.finalPnL =  sum(trade['pnl'] for trade in self.tradesList)
+        tradesDf = pd.DataFrame(self.tradesList)
+
+        todayDateStr = dt.date.today().strftime("%d-%m-%Y")
+        filename = todayDateStr + "trades_log.csv"
+        tradeFilePath = "G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\trades_log\\"+filename
+        tradesDf.to_csv(tradeFilePath, index = True)
+
+    
+
 
         
 

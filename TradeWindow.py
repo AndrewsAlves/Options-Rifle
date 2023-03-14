@@ -9,7 +9,7 @@ from KiteApi import KiteApi
 from Utils.Utilities import WorkerThread,WorkerLoopedThread,TickLooperThread
 import time
 import threading 
-
+from Utils import Utilities
 
 
 
@@ -24,10 +24,29 @@ cssBtnShortDisabled = "color: #000000;""border-radius: 15px;""background-color: 
 cssEtEditRiskDisabled = "color: #9F9F9F;""border: 2px solid #9F9F9F"
 cssEtEditRiskEnabled = "color: white;""border: 2px solid White"
 
+cssMTMRed = "color: red;"
+cssMTMGreen = "color: green;"
+
+
 logging.basicConfig(level=logging.DEBUG)
 
+AGGRESIVE = "aggresive"
+DEFENSIVE = "defensive"
+BOUNCE = "bounce"
 
-class UserInterface(QMainWindow):
+LONG = "long"
+SHORT = "short"
+
+ORDER_PLACED = "orderplaced"
+ORDER_ERROR = "ordererror"
+ORDER_ERROR_0_POSITION_SIZING = "ordererror_0_position_sizing"
+
+
+EXECUTED = 1
+PENDING = -1
+CANCELLED = -2
+
+class TradeWindow(QMainWindow):
 
     __instance = None
 
@@ -42,7 +61,10 @@ class UserInterface(QMainWindow):
                                             startedMessage = "Started Ticks process", 
                                                stoppedMessage = "Stopped Ticks process")
         
-
+        
+        self.executionThread = WorkerThread(self.executionThreadFunc)
+        self.statusBartimer = None
+        self.orderStatusTimer = None
 
         ui_file_name = "ui_templates/options_rifle_UI_2.ui"
         ui_file = QFile(ui_file_name)
@@ -81,6 +103,27 @@ class UserInterface(QMainWindow):
         self.window.btn_execute.clicked.connect(self.clickedExecute)
 
 
+        ## SET BUTTONGS AND ITS FUNCTIONS FOR TRADE FRAME 
+        self.window.btn_exit_trade.clicked.connect(self.clickedExitTrade)
+        self.window.btn_decrease_sl.clicked.connect(self.clickeddedcreaseSL)
+        self.window.btn_increase_sl.clicked.connect(self.clickedIncreaseSL)
+        self.window.btn_edit_sl.clicked.connect(self.clickedEditSL)
+        self.window.btn_increase_sl.setIcon(QIcon('icons/btn_plus.png'))
+        self.window.btn_decrease_sl.setIcon(QIcon('icons/btn_minus.png'))
+        self.window.btn_edit_sl.setIcon(QIcon('icons/btn_edit_sl.png'))
+        self.window.btn_exit_trade.setIcon(QIcon('icons/btn_exit.png'))
+
+
+        self.window.frame_trade.hide()
+        self.window.label_no_position.show()
+
+
+        # Set the validator to accept INT point numbers only
+        self.riskValidator = QIntValidator(1,999999) 
+        self.slValidator = QIntValidator(0,999999)
+        self.window.et_risk.setValidator(self.riskValidator)
+        self.window.spin_sl.setMinimum(0)
+
         #inititalise Startup Parameters
         self.clickedAggresive()
         self.clickedLong()
@@ -90,6 +133,7 @@ class UserInterface(QMainWindow):
         self.enableOptionsRifleUi()
         self.updateStatusBar()
 
+        self.riskPerTrade = 2500
         self.window.et_risk.setText("2500")
         self.window.et_risk.setEnabled(False)
         self.window.btn_editrisk.setIcon(QIcon('icons/btn_edit_risk.png'))
@@ -110,23 +154,11 @@ class UserInterface(QMainWindow):
         self.ticksThread.start()
 
 
-
-    def disableOptionsRifleUI(self) :
-        self.window.MainWinodw2.setEnabled(False)
-        self.overlay_frame.show()
-
-    def enableOptionsRifleUi(self) : 
-        self.window.MainWinodw2.setEnabled(True)
-        self.overlay_frame.hide()
-
-    def updateStatusBar(self, message = 'All Set :)') : 
-        self.window.statusbar.showMessage(message)
-
     @staticmethod
     def get_instance():
-        if UserInterface.__instance is None:
-           UserInterface.__instance = UserInterface()
-        return UserInterface.__instance
+        if TradeWindow.__instance is None:
+           TradeWindow.__instance = TradeWindow()
+        return TradeWindow.__instance
 
     def updateUi(self) : 
         return
@@ -141,22 +173,28 @@ class UserInterface(QMainWindow):
         self.window.btn_aggresive.setStyleSheet(cssBtnEnabled)
         self.window.btn_defensive.setStyleSheet(cssBtnDisabled)
         self.window.btn_bounce.setStyleSheet(cssBtnDisabled )
-
+        self.stg = AGGRESIVE
         return
 
     def clickedDefensive(self) :
         self.window.btn_aggresive.setStyleSheet(cssBtnDisabled)
         self.window.btn_defensive.setStyleSheet(cssBtnEnabled)
         self.window.btn_bounce.setStyleSheet(cssBtnDisabled)
+        self.stg = DEFENSIVE
+
         return
 
     def clickedBounce(self):
         self.window.btn_aggresive.setStyleSheet(cssBtnDisabled)
         self.window.btn_defensive.setStyleSheet(cssBtnDisabled)
         self.window.btn_bounce.setStyleSheet(cssBtnEnabled)
+        self.stg = BOUNCE
         return           
 
     def clickedLong(self):
+
+        self.tradeType = LONG
+        self.updateSpotSLMinMax(KiteApi.ins().bnfLtp)
         self.window.btn_long.setStyleSheet(cssBtnlongEnabled)
         self.window.btn_short.setStyleSheet(cssBtnShortDisabled)
         self.window.btn_long.setIcon(QIcon('icons/btn_long_enabled.png'))
@@ -164,6 +202,9 @@ class UserInterface(QMainWindow):
 
         return          
     def clickedShort(self):
+
+        self.tradeType = SHORT
+        self.updateSpotSLMinMax(KiteApi.ins().bnfLtp)
         self.window.btn_long.setStyleSheet(cssBtnlongDisabled)
         self.window.btn_short.setStyleSheet(cssBtnShortEnabled)
         self.window.btn_long.setIcon(QIcon('icons/btn_long_disabled.png'))
@@ -171,27 +212,207 @@ class UserInterface(QMainWindow):
         return 
     
     def setFuturesSLInSpin(self) :
-        print("clicked futures spot")
+        print("clicked spin stop")
         self.window.spin_stoploss.setValue(KiteApi.ins().bnfLtp)
         return
-
+    
     def clickedTrades(self):
         return     
     def clickedPnLChart(self):
         return 
     def clickedExecute(self):
+        self.window.btn_execute.setEnabled(False)
+        self.executionThread.start()
         return     
+    
+    def executionThreadFunc(self) :
+        slPrice = self.window.spin_stoploss.value()
+        
+        status = KiteApi.ins().executeTrade(self.tradeType, slPrice, self.riskPerTrade,self.stg)
+        if status == ORDER_PLACED :
+            self.initTradePositionUI()
+            self.updateOrderStatus("Pending...")
+        elif status == ORDER_ERROR :
+            self.updateStatusBar("Order Placing Error", delayReset= True)
+        elif status == ORDER_ERROR_0_POSITION_SIZING :
+            self.updateStatusBar("0 Qty possible", delayReset= True)
+
+        self.window.btn_execute.setEnabled(True)
+
+
     def clickedEditRisk(self):
         if self.window.et_risk.isEnabled() : 
+             ## set Risk
+             self.riskPerTrade = int(self.window.et_risk.text())
              self.window.et_risk.setEnabled(False)
              self.window.btn_editrisk.setIcon(QIcon('icons/btn_edit_risk.png'))
              self.window.et_risk.setStyleSheet(cssEtEditRiskDisabled)
         else:
+            ## edit risk
             self.window.et_risk.setEnabled(True)
             self.window.btn_editrisk.setIcon(QIcon('icons/btn_set_risk.png'))
             self.window.et_risk.setStyleSheet(cssEtEditRiskEnabled)
 
         return    
+    
+    def disableOptionsRifleUI(self) :
+        self.window.MainWinodw2.setEnabled(False)
+        self.overlay_frame.show()
+
+    def enableOptionsRifleUi(self) : 
+        self.window.MainWinodw2.setEnabled(True)
+        self.overlay_frame.hide()
+
+    def updateStatusBar(self, message = " ", delayReset = False) : 
+        self.window.statusbar.showMessage(message)
+        if delayReset : 
+            if self.statusBartimer is not None :
+                self.statusBartimer.cancel()
+            self.statusBartimer = threading.Timer(2.0, self.resetStatusBarText)
+            self.statusBartimer.start()
+    
+    def resetStatusBarText(self) : 
+        self.updateStatusBar(" ")
+
+    def updateSpotSLMinMax(self,maxPrice) :
+        if maxPrice <= 0 : return
+        if self.tradeType == LONG :
+            self.window.spin_stoploss.setMaximum(maxPrice)
+            self.window.spin_stoploss.setMinimum(0)
+        else :
+            self.window.spin_stoploss.setMaximum(9999999)
+            self.window.spin_stoploss.setMinimum(maxPrice)
+
+
+    """
+    #################################################################################################
+    #################################################################################################
+    #################################################################################################
+    #################################################################################################
+    """
+
+
+
+    def initTradePositionUI(self) :
+
+        trade = KiteApi.ins().currentTradePosition
+        if trade.tradeType == LONG :
+            self.window.icon_trade_type.setIcon('icons/icon_arrow_long.png')    
+        else :
+            self.window.icon_trade_type.setIcon('icons/icon_arrow_short.png')    
+
+        if trade.strategy == AGGRESIVE :
+            self.window.label_strategy.setText('AT')
+        elif trade.strategy == DEFENSIVE :
+            self.window.label_strategy.setText('DT')
+        else:
+            self.window.label_strategy.setText('BT')
+
+        self.window.label_instrument.setText(trade.tickerSymbol)
+        self.window.label_trade_qty.setText(trade.qty)
+        self.window.label_avg_price.setText(trade.entryPrice)
+        self.window.label_trade_ltp.setText(trade.ltp)
+
+        self.window.spin_sl.setValue(trade.stoplossPrice)
+        self.updateSLMaxPrice(trade.ltp)
+
+        self.updateLabelRiskAmount(trade.riskAmount)
+        self.updateLabelUnrealisedRewardAmount(trade.unRealisedProfit)
+
+        self.window.label_no_position.hide()
+        self.window.frame_trade.show()
+
+    def clickedIncreaseSL(self) :
+        return
+    
+    def clickeddedcreaseSL(self) :
+        return
+    
+    def clickedEditSL(self) :
+
+        if self.window.spin_sl.isEnabled() : 
+             ## set Risk
+             self.window.spin_sl.setEnabled(False)
+             self.window.btn_edit_sl.setIcon(QIcon('icons/btn_edit_sl.png'))
+             self.window.spin_sl.setStyleSheet(cssEtEditRiskDisabled)
+             KiteApi.ins().currentTradePosition.setStoploss(int(self.window.spin_sl.text()))
+
+        else:
+            ## edit risk
+            self.window.spin_sl.setEnabled(True)
+            self.window.btn_edit_sl.setIcon(QIcon('icons/btn_set_sl.png'))
+            self.window.spin_sl.setStyleSheet(cssEtEditRiskEnabled)
+
+        return    
+    
+    def updateSLMaxPrice(self, optiosLtp) :
+        self.window.spin_sl.setMaximum(optiosLtp)
+        self.window.spin_sl.setMinimum(0)
+        return
+    
+    def updateLabelRiskAmount(self, riskAmount) :
+        if riskAmount < 0 :
+            riskStr = "+" + str(abs(riskAmount))
+        else :
+           riskStr = str(riskAmount)
+
+        if riskAmount < 0 :  self.window.label_profit.setStyleSheet(cssMTMGreen) 
+        else : self.window.label_profit.setStyleSheet(cssMTMRed)
+        
+        self.window.label_risk.setText(riskStr)
+        return
+    
+    def updateLabelUnrealisedRewardAmount(self, rewardAmount) :
+        if rewardAmount < 0 :
+            rewardStr = str(rewardAmount)
+        else :
+            rewardStr = "+" + str(rewardAmount)
+
+        if rewardAmount < 0 :  self.window.label_profit.setStyleSheet(cssMTMRed) 
+        else : self.window.label_profit.setStyleSheet(cssMTMGreen)
+        
+        self.window.label_profit.setText(rewardStr)
+        return
+    
+    def updateMtMAmount(self, MTM) :
+        if MTM < 0 :
+            rewardStr = str(MTM)
+        else :
+            rewardStr = "+" + str(MTM)
+        
+        if MTM < 0 :  self.window.label_MTM.setStyleSheet(cssMTMRed) 
+        else : self.window.label_MTM.setStyleSheet(cssMTMGreen)
+
+        self.window.label_MTM.setText(rewardStr)
+
+    
+    def clickedExitTrade(self) :
+        status = KiteApi.ins().exitCurrentPosition()
+        if status == ORDER_PLACED :
+            self.updateOrderStatus("Exiting...")
+        elif status == ORDER_ERROR :
+            self.updateStatusBar("Order Exiting Error", delayReset= True)
+        return
+    
+    def updateOrderStatus(self,str, delayedHide = False) : 
+        self.window.label_order_status.show()
+        self.window.label_order_status.setText(str)
+        if delayedHide : 
+            if self.orderStatusTimer is not None :
+                self.orderStatusTimer.cancel()
+            self.orderStatusTimer = threading.Timer(2.0, self.hideOrderstatus)
+            self.orderStatusTimer.start()
+
+    def hideOrderstatus(self) : 
+        self.window.label_order_status.hide()
+
+    def exitOrderExecuted(self) :
+        self.updateOrderStatus("Exited")
+        self.window.label_order_status.hide()
+        KiteApi.ins().addLastTradeToTradesList()
+        KiteApi.ins().currentTradePosition = None
+        self.window.frame_trade.hide()
+        self.window.label_no_position.show()
     
     """Callbacks
     ---------
@@ -217,6 +438,17 @@ class UserInterface(QMainWindow):
     #######   KITE CONNECT       ############
     ####### ___________________ ############ 
 
+    def connectNewWebsocket(self) :
+        KiteApi.ins().connetInitialTickerSockets(self.onTicks,
+                                                         self.onConnect,
+                                                         self.onClose,
+                                                         self.onError,
+                                                         self.onMessage,
+                                                         self.onReConnect,
+                                                         self.onNoReConnect,
+                                                         self.onOrderUpdate)
+        
+
     def onTicks(self, ws, ticks) :
         # Callback to receive ticks.
         #logging.debug("Ticks: {}".format(ticks))
@@ -234,17 +466,36 @@ class UserInterface(QMainWindow):
             if tick['instrument_token'] == KiteApi.ins().getUpcomingbnfFutureToken() :
                 KiteApi.ins().bnfLtp = tick['last_price']
                 self.window.label_futures.setText(str(KiteApi.ins().bnfLtp))
+            if KiteApi.ins().currentTradePosition is not None :
+                trade = KiteApi.ins().currentTradePosition
+                if tick['instrument_token'] == trade.tickerToken :
+                    trade.updateLtp(tick['last_price'])
 
         preDiff = round(KiteApi.ins().bnfLtp - KiteApi.ins().bnfSpotLtp, 1)
         self.window.label_future_diff.setText(str(preDiff))        
-    
+
+
         KiteApi.ins().setLTPforRequiredTokens(ticks)
+
+        if KiteApi.ins().currentTradePosition is not None :
+            trade = KiteApi.ins().currentTradePosition
+            unRealisedMtm = KiteApi.ins().finalPnL + trade.unRealisedProfit
+            self.updateMtMAmount(unRealisedMtm)
+            self.updateLabelUnrealisedRewardAmount(trade.unRealisedProfit)
+
+            if trade.tradeEntryStatus == EXECUTED :
+                if KiteApi.ins().tokensLtp[trade.tickerToken] <= trade.stoplossPrice :
+                    self.clickedExitTrade()
+                
+                    print('Alert : Position SL hit, Exiting the trade')
+
+
+
 
         end_time = time.time()
         time_taken = end_time - start_time
-        print(f"Time taken: {time_taken} seconds")
+        #print(f"Time taken: {time_taken} seconds")
         self.tickraceLock.release()
-
 
     def onConnect(self, ws, response) :
         tokenList = KiteApi.ins().getAllRequiredInstrumentListTokens()
@@ -256,7 +507,7 @@ class UserInterface(QMainWindow):
         ws.stop()
         return
     def onError(self, ws, code, reason) :
-        self.updateStatusBar("Web socket Error...")
+        self.updateStatusBar("Web socket closed due to an error...")
         print("server error : " + reason)
         return
     def onMessage(self,ws, payload, isBinary) :
@@ -264,11 +515,23 @@ class UserInterface(QMainWindow):
          ##   print("message from kite server : " + payload)
         return
     def onReConnect(self, attemptCount) :
+        if Utilities.checkInternetConnection() :
+            self.updateStatusBar("Socket issue Reconnecting...   " + str(attemptCount))
+        else :
+            self.updateStatusBar("Internet issue Reconnecting...   " + str(attemptCount))
+
         print("server reconnect attemps : " + attemptCount)
         return
     def onNoReConnect(self, ws) :
+        KiteApi.ins().ticker.close()
+        if Utilities.checkInternetConnection() :
+            self.updateStatusBar("Socket issue closed connection !  ")
+        else :
+            self.updateStatusBar("Internet issue closed connection !  ")
         return
     def onOrderUpdate(self, ws, data) :
+
+        logging.debug("Order Update: {}".format(data))
         return
     
 

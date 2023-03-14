@@ -2,6 +2,7 @@ from PySide6.QtCore import QThread, Signal
 import datetime as dt
 import time
 import math
+import requests
 
 class WorkerThread(QThread):
     finished = Signal(str)
@@ -82,10 +83,11 @@ class TickLooperThread(QThread):
         print(__class__.__name__ + " : " +  self.stoppedMessage)
 
 
-def getTimetoExpirationInHours(expirtDatetime) : 
-    currentDatetime = dt.date.today()
+def getTimetoExpirationInHoursFromDays(expirtDatetime) : 
+    currentDatetime = dt.datetime.combine(dt.date.today(), dt.datetime.min.time())
     time_to_expiry_hours = float((expirtDatetime - currentDatetime).total_seconds() / 3600)
-    return time_to_expiry_hours
+    time_to_expiry_days_in_hours = (1 / 24) * time_to_expiry_hours
+    return time_to_expiry_days_in_hours
 
 def getStrikePrice(ltp, ItmOTmStrikeLevel = 1, optionStrikeInterval = 100) :
     rounded_ltp = round(ltp / 100) * 100
@@ -97,13 +99,28 @@ def getStrikePrice(ltp, ItmOTmStrikeLevel = 1, optionStrikeInterval = 100) :
 
     return itm_strike_price
 
-def getPositionsSizing(stoploss, ltp, risk_per_trade, lotSize) :
+def getPositionsSizing(stoplossPoints, risk_per_trade, lotSize) :
     # calculate risk per option
-    noOfUnitsPossible = risk_per_trade / stoploss
+    if stoplossPoints == 0 :
+        return 0
+
+    noOfUnitsPossible = risk_per_trade / stoplossPoints
     # calculate number of options
     position_size = (int(noOfUnitsPossible) // lotSize) * lotSize
+
+    if position_size > 800: position_size = 800
+
     print("Position size:", position_size)
     return position_size
+
+def checkInternetConnection():
+    url = "http://www.google.com"
+    timeout = 5
+    try:
+        response = requests.get(url, timeout=timeout)
+        return True
+    except requests.ConnectionError:
+        return False
 
 
 

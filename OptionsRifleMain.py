@@ -3,7 +3,7 @@ import sys
 from PySide6.QtWidgets import QApplication, QWidget, QPushButton
 from PySide6.QtCore import QFile,QIODevice,Slot,QThread
 from PySide6.QtUiTools import QUiLoader
-from UserInterface import UserInterface
+from TradeWindow import TradeWindow
 from LoginWIndow import LoginWindow
 
 
@@ -22,7 +22,6 @@ class OptionsRifleMain() :
         if OptionsRifleMain.__instance is None:
             OptionsRifleMain.__instance = OptionsRifleMain()
             return OptionsRifleMain.__instance
-
 
 if __name__ == "__main__": 
 

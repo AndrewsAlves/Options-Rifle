@@ -8,7 +8,7 @@ import logging
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
 from PySide6.QtCore import QThread, Signal
-from UserInterface import UserInterface
+from TradeWindow import TradeWindow
 from KiteApi import KiteApi
 from Utils.Utilities import WorkerThread
 import time 
@@ -51,7 +51,7 @@ class AuthServerThread(QThread):
 
 server = HTTPServer(("localhost", 8000), RequestHandler)
 auth_server_thread = AuthServerThread()       
-getInstrumentThread = WorkerThread(KiteApi.ins().getInstruments)
+getInstrumentThread = WorkerThread(KiteApi.ins().getInstrumentsAndTrades)
 
                 ### LOGIN WINDOW ###
 ###--------------------------------------------------------###
@@ -105,7 +105,7 @@ class LoginWindow(QMainWindow) :
     
     def handleGetInstrumentResult(self, result):
         print("Starting Options Rifle...")
-        self.userInterface = UserInterface.get_instance()
+        self.userInterface = TradeWindow.get_instance()
         self.userInterface.show()
         self.close()
         return 
