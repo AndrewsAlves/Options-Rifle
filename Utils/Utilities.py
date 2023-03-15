@@ -89,17 +89,24 @@ def getTimetoExpirationInHoursFromDays(expirtDatetime) :
     time_to_expiry_days_in_hours = (1 / 24) * time_to_expiry_hours
     return time_to_expiry_days_in_hours
 
-def getStrikePrice(ltp, ItmOTmStrikeLevel = 1, optionStrikeInterval = 100) :
+def getStrikePrice(ltp, CeOrPe = "CE" , ItmOTmStrikeLevel = 1, optionStrikeInterval = 100, debug = True) :
     rounded_ltp = round(ltp / 100) * 100
-    strikeSelectionPoint = ItmOTmStrikeLevel*optionStrikeInterval
-    if (ItmOTmStrikeLevel < 0) :
-        itm_strike_price = rounded_ltp + strikeSelectionPoint
+
+    strikeSelectionPoint = ItmOTmStrikeLevel * optionStrikeInterval
+
+    if CeOrPe == "CE" :
+        strike_price = rounded_ltp + strikeSelectionPoint
     else :
-        itm_strike_price = rounded_ltp - strikeSelectionPoint
+        strike_price = rounded_ltp - strikeSelectionPoint
 
-    return itm_strike_price
+    print("Strike :", strike_price)
+    return strike_price
 
-def getPositionsSizing(stoplossPoints, risk_per_trade, lotSize) :
+def getPositionsSizing(stoplossPoints, risk_per_trade, lotSize, debug = True) :
+
+    if debug :
+        # min lot size to test 
+        return lotSize
     # calculate risk per option
     if stoplossPoints == 0 :
         return 0

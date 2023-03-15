@@ -73,6 +73,7 @@ class LoginWindow(QMainWindow) :
         self.loader = QUiLoader()
         self.window = self.loader.load(ui_file)
         ui_file.close()
+        self.window.setWindowIcon(QIcon("icons/icon_options_rifle_small.png"))
         self.window.setWindowTitle("Login to a Zerodha")
         self.window.btn_login.clicked.connect(self.clickedLogintoZerodha)
 

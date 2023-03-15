@@ -1,3 +1,4 @@
+import kiteconnect
 from kiteconnect import KiteConnect
 import webbrowser
 import pandas as pd
@@ -37,6 +38,10 @@ MAXIMUM_STOPLOSS_SPOT = 200
 ORDER_PLACED = "orderplaced"
 ORDER_ERROR = "ordererror"
 ORDER_ERROR_0_POSITION_SIZING = "ordererror_0_position_sizing"
+
+EXECUTED = 1
+PENDING = -1
+CANCELLED = -2
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -153,7 +158,7 @@ class KiteApi() :
         result = "Success"
 
         todayDateStr = dt.date.today().strftime("%d-%m-%Y")
-        filename = todayDateStr + "trades_log.csv"
+        filename = todayDateStr + "trades_logs.csv"
         tradeFilePath = "G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\trades_log\\"+filename
 
         if os.path.exists(tradeFilePath) :
@@ -312,15 +317,16 @@ class KiteApi() :
 
         return
     
-
     def executeTrade(self, type, SLSpot, maxRiskPerTrade, stg) : 
 
+        status = ORDER_ERROR
         start_time = time.time()
         self.executionRaceLock.acquire() 
 
         ce_or_pe = KEY_CE if type != KEY_SHORT else KEY_PE
 
-        strike = Utils.Utilities.getStrikePrice(self.bnfSpotLtp)
+
+        strike = Utils.Utilities.getStrikePrice(self.bnfSpotLtp,ce_or_pe, 7)
 
         try :
             df = self.getSelectedStrikeOption(KEY_BANKNIFTY_FUT, ce_or_pe, self.upcomingOptionsExpiry, strike)
@@ -378,8 +384,10 @@ class KiteApi() :
         ivDropbuffer = (c.vega / 100) * 25
         slSpecial = slNormal + ((c.vega / 100) * 25)"""
 
-        slPoints = int(round(slSpotPoints * float(c.callDelta)))
+        delta = float(c.callDelta) if type != KEY_SHORT else float(c.putDelta)
+        slPoints = abs(int(round(slSpotPoints * delta)))
         qty = Utils.Utilities.getPositionsSizing(slPoints, maxRiskPerTrade,lotSize)
+
 
         if qty == 0 :
             self.executionRaceLock.release() 
@@ -392,8 +400,7 @@ class KiteApi() :
 
         # Place an order
         try:
-
-
+            self.currentTradePosition = Trade(tickerToken, type, stg, tradingSymbol, qty, ltp, slPoints)
             order_id = self.kite.place_order(tradingsymbol=tradingSymbol,
                                         exchange=self.kite.EXCHANGE_NFO,
                                         transaction_type=self.kite.TRANSACTION_TYPE_BUY,
@@ -402,19 +409,38 @@ class KiteApi() :
                                         order_type=self.kite.ORDER_TYPE_MARKET,
                                         product=self.kite.PRODUCT_MIS,
                                         validity=self.kite.VALIDITY_DAY)
-            
-            
-        except Exception as e:
-           self.executionRaceLock.release() 
-           print("ERROR : Order Placing Failed Due to an Kite Exception" )
-           end_time = time.time()
-           time_taken = end_time - start_time
-           print(f"Time taken to Place order: {time_taken} seconds")
-           return ORDER_ERROR
-        
-        self.currentTradePosition = Trade(order_id, tickerToken, type, stg, tradingSymbol, qty, ltp, slPoints)
-        logging.info("Order placed. ID is: {}".format(order_id))
+           
+            self.currentTradePosition.entryOrderId = order_id
 
+            status = ORDER_PLACED
+            logging.info("Order placed. ID is: {}".format(order_id))
+
+        except kiteconnect.exceptions.TokenException as e:
+            status = ORDER_ERROR
+            logging.error("TokenException occurred: {}".format(str(e)))
+        except kiteconnect.exceptions.InputException as e:
+            status = ORDER_ERROR
+            logging.error("InputException occurred: {}".format(str(e)))
+        except kiteconnect.exceptions.OrderException as e:
+            status = ORDER_ERROR
+            print("Order placement failed. Reason:", e.message)
+        except kiteconnect.exceptions.NetworkException as e:
+            status = ORDER_ERROR
+            logging.error("NetworkException occurred: {}".format(str(e)))
+        except kiteconnect.exceptions.GeneralException as e:
+            status = ORDER_ERROR
+            logging.error("GeneralException occurred: {}".format(str(e)))
+        except Exception as e :
+            status = ORDER_ERROR
+
+        
+        self.executionRaceLock.release() 
+        end_time = time.time()
+        time_taken = end_time - start_time
+
+        print(f"Time taken to Place order: {time_taken} seconds")
+        return status
+    
         self.executionRaceLock.release() 
         end_time = time.time()
         time_taken = end_time - start_time
@@ -424,28 +450,39 @@ class KiteApi() :
 
     def exitCurrentPosition(self) :
         # Place an order
+
+        status = ORDER_ERROR
+
         trade = self.currentTradePosition
         try:
             order_id = self.kite.place_order(tradingsymbol=trade.tickerSymbol,
                                         exchange=self.kite.EXCHANGE_NFO,
-                                        transaction_type=self.kite.TRANSACTION_TYPE_BUY,
+                                        transaction_type=self.kite.TRANSACTION_TYPE_SELL,
                                         quantity= trade.qty,
                                         variety=self.kite.VARIETY_REGULAR,
                                         order_type=self.kite.ORDER_TYPE_MARKET,
                                         product=self.kite.PRODUCT_MIS,
                                         validity=self.kite.VALIDITY_DAY)
             
-            self.currentTradePosition.exitOrderId = order_id
 
             logging.info("Order placed. ID is: {}".format(order_id))
 
             return ORDER_PLACED 
-        except Exception as e:
-           print("Order Placing Failed Due to an exception" )
-           return ORDER_ERROR
-
-
-      
+        except kiteconnect.exceptions.TokenException as e:
+            logging.error("TokenException occurred: {}".format(str(e)))
+            return ORDER_ERROR 
+        except kiteconnect.exceptions.InputException as e:
+            logging.error("InputException occurred: {}".format(str(e)))
+            return ORDER_ERROR 
+        except kiteconnect.exceptions.OrderException as e:
+            print("Order placement failed. Reason:", e.message)
+            return ORDER_ERROR 
+        except kiteconnect.exceptions.NetworkException as e:
+            logging.error("NetworkException occurred: {}".format(str(e)))
+            return ORDER_ERROR 
+        except kiteconnect.exceptions.GeneralException as e:
+            logging.error("GeneralException occurred: {}".format(str(e)))
+            return ORDER_ERROR 
 
     def addLastTradeToTradesList(self) : 
         self.tradesList.append(self.currentTradePosition.getAsDict())
@@ -454,8 +491,8 @@ class KiteApi() :
 
         todayDateStr = dt.date.today().strftime("%d-%m-%Y")
         filename = todayDateStr + "trades_log.csv"
-        tradeFilePath = "G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\trades_log\\"+filename
-        tradesDf.to_csv(tradeFilePath, index = True)
+        tradeFilePath = "G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\trades_logs\\"+filename
+        tradesDf.to_csv(tradeFilePath)
 
     
 

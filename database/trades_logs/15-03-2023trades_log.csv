@@ -1,0 +1,4 @@
+,ticker_token,trade_type,strategy,ticker_symbol,qty,entry_time,entry_price,exit_time,exit_price,pnl,tag,notes
+0,14099970,short,aggresive,BANKNIFTY2331638500PE,25,2023-03-15 14:54:02.701083,22.9,2023-03-15 14:54:23.109105,23.05,3.75,,
+1,14099970,short,aggresive,BANKNIFTY2331638500PE,25,2023-03-15 14:54:56.417301,24.3,2023-03-15 14:55:33.138229,24.6,7.5,,
+2,14099970,short,aggresive,BANKNIFTY2331638500PE,25,2023-03-15 15:03:38.099151,24.65,2023-03-15 15:04:55.835078,25.0,8.75,,

@@ -15,7 +15,13 @@ from Utils import Utilities
 
 cssBtnEnabled = "background-color: #F3EF52;""color: #27292F;""border-radius: 15px;"
 cssBtnDisabled = "color: #757575;" "background-color: #27292F;" "border-radius: 15px;" "border: 2px solid #9F9F9F;"
-cssBtnExecute = "color: #000000;""background: #F3EF52;"#"border-radius: 15px;"
+cssBtnExecute = "color: #000000;""background: #F3EF52;""border-radius: 15px;"
+cssBtnExecuting = "color: #000000;""background: #A4A13A;""border-radius: 15px;"
+cssBtnExit = "color: white;""background: #F53535;""border-radius: 15px;"
+cssBtnExiting = "color: white;""background: #D82929;""border-radius: 15px;"
+
+
+
 
 cssBtnlongEnabled = "color: #000000;""border-radius: 15px;""background-color: rgba(255, 255, 255, 0);""border: 2px solid #0DFF00;"
 cssBtnlongDisabled = "color: #000000;""border-radius: 15px;""background-color: rgba(255, 255, 255, 0);""border: 2px solid #9F9F9F;"
@@ -26,6 +32,8 @@ cssEtEditRiskEnabled = "color: white;""border: 2px solid White"
 
 cssMTMRed = "color: red;"
 cssMTMGreen = "color: green;"
+cssMTMWhite = "color: white;"
+
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -45,6 +53,16 @@ ORDER_ERROR_0_POSITION_SIZING = "ordererror_0_position_sizing"
 EXECUTED = 1
 PENDING = -1
 CANCELLED = -2
+REJECTED = -3
+NO_RESPONSE = 0
+
+STATUS_OPEN = "OPEN"
+STATUS_COMPLETE = "COMPLETE"
+STATUS_CANCELLED = "CANCELLED"
+STATUS_REJECTED = "REJECTED"
+
+BUY = "BUY"
+SELL = "SELL"
 
 class TradeWindow(QMainWindow):
 
@@ -54,6 +72,8 @@ class TradeWindow(QMainWindow):
         super().__init__()
 
         self.tickraceLock = threading.Lock()
+        self.orderUpdateraceLock = threading.Lock()
+
         self.greeksThread = WorkerLoopedThread(KiteApi.ins().deriveOptionsGreeks, loopsEverySec = 1, 
                                                startedMessage = "Started Greeks Calucations", 
                                                stoppedMessage = "Stopped Greeks Calculations")
@@ -65,6 +85,8 @@ class TradeWindow(QMainWindow):
         self.executionThread = WorkerThread(self.executionThreadFunc)
         self.statusBartimer = None
         self.orderStatusTimer = None
+        self.orderPlaceErrorTimer = None
+
 
         ui_file_name = "ui_templates/options_rifle_UI_2.ui"
         ui_file = QFile(ui_file_name)
@@ -104,16 +126,16 @@ class TradeWindow(QMainWindow):
 
 
         ## SET BUTTONGS AND ITS FUNCTIONS FOR TRADE FRAME 
-        self.window.btn_exit_trade.clicked.connect(self.clickedExitTrade)
         self.window.btn_decrease_sl.clicked.connect(self.clickeddedcreaseSL)
         self.window.btn_increase_sl.clicked.connect(self.clickedIncreaseSL)
         self.window.btn_edit_sl.clicked.connect(self.clickedEditSL)
         self.window.btn_increase_sl.setIcon(QIcon('icons/btn_plus.png'))
         self.window.btn_decrease_sl.setIcon(QIcon('icons/btn_minus.png'))
         self.window.btn_edit_sl.setIcon(QIcon('icons/btn_edit_sl.png'))
-        self.window.btn_exit_trade.setIcon(QIcon('icons/btn_exit.png'))
 
-
+        self.window.btn_exit.clicked.connect(self.clickedExitTrade)
+        self.window.btn_exit.setStyleSheet(cssBtnExit)
+        self.window.btn_exit.hide()
         self.window.frame_trade.hide()
         self.window.label_no_position.show()
 
@@ -122,7 +144,6 @@ class TradeWindow(QMainWindow):
         self.riskValidator = QIntValidator(1,999999) 
         self.slValidator = QIntValidator(0,999999)
         self.window.et_risk.setValidator(self.riskValidator)
-        self.window.spin_sl.setMinimum(0)
 
         #inititalise Startup Parameters
         self.clickedAggresive()
@@ -212,7 +233,6 @@ class TradeWindow(QMainWindow):
         return 
     
     def setFuturesSLInSpin(self) :
-        print("clicked spin stop")
         self.window.spin_stoploss.setValue(KiteApi.ins().bnfLtp)
         return
     
@@ -230,14 +250,58 @@ class TradeWindow(QMainWindow):
         
         status = KiteApi.ins().executeTrade(self.tradeType, slPrice, self.riskPerTrade,self.stg)
         if status == ORDER_PLACED :
-            self.initTradePositionUI()
-            self.updateOrderStatus("Pending...")
+            self.updateStatusBar("Entry Order Placed!", delayReset= True)
         elif status == ORDER_ERROR :
-            self.updateStatusBar("Order Placing Error", delayReset= True)
+            print("Kite Order Error")
+            if self.orderPlaceErrorTimer is not None :
+                self.orderPlaceErrorTimer.cancel()
+            self.orderPlaceErrorTimer = threading.Timer(5.0, self.checkResponseFromEntryOrderupdate)
+            self.orderPlaceErrorTimer.start()
         elif status == ORDER_ERROR_0_POSITION_SIZING :
             self.updateStatusBar("0 Qty possible", delayReset= True)
 
-        self.window.btn_execute.setEnabled(True)
+        self.executeButtonUIupdate(1)
+
+    
+    def checkResponseFromEntryOrderupdate(self) :
+        if KiteApi.ins().currentTradePosition.tradeEntryStatus == NO_RESPONSE :
+            self.updateStatusBar("Kite order placing error... ", delayReset= True)
+            self.executeButtonUIupdate(0)
+
+    def checkResponseFromExitOrderupdate(self) :
+        if KiteApi.ins().currentTradePosition.tradeExitStatus == NO_RESPONSE :
+            self.updateStatusBar("Kite order placing error... ", delayReset= True)
+            self.exitButtonUIupdate(0)
+
+    def executeButtonUIupdate(self,executing = 1) :
+        if executing == 1 :
+            self.window.btn_execute.setEnabled(False)
+            self.window.btn_execute.setText("...")
+            self.window.btn_execute.setStyleSheet(cssBtnExecuting)
+        else :
+            self.window.btn_execute.setEnabled(True)
+            self.window.btn_execute.setText("Execute")
+            self.window.btn_execute.setStyleSheet(cssBtnExecute)
+
+    def exitButtonUIupdate(self,exiting = 1) :
+        if exiting == 1 :
+            self.window.btn_Exit.setEnabled(False)
+            self.window.btn_Exit.setText("...")
+            self.window.btn_Exit.setStyleSheet(cssBtnExiting)
+        else :
+            self.window.btn_Exit.setEnabled(True)
+            self.window.btn_Exit.setText("Exit")
+            self.window.btn_Exit.setStyleSheet(cssBtnExit)
+
+    def executeButtonUIupdate(self,executing = 1) :
+        if executing == 1 :
+            self.window.btn_execute.setEnabled(False)
+            self.window.btn_execute.setText("...")
+            self.window.btn_execute.setStyleSheet(cssBtnExecuting)
+        else :
+            self.window.btn_execute.setEnabled(True)
+            self.window.btn_execute.setText("Execute")
+            self.window.btn_execute.setStyleSheet(cssBtnExecute)
 
 
     def clickedEditRisk(self):
@@ -268,7 +332,7 @@ class TradeWindow(QMainWindow):
         if delayReset : 
             if self.statusBartimer is not None :
                 self.statusBartimer.cancel()
-            self.statusBartimer = threading.Timer(2.0, self.resetStatusBarText)
+            self.statusBartimer = threading.Timer(3.0, self.resetStatusBarText)
             self.statusBartimer.start()
     
     def resetStatusBarText(self) : 
@@ -292,14 +356,13 @@ class TradeWindow(QMainWindow):
     """
 
 
-
-    def initTradePositionUI(self) :
+    def entryOrderExecuted(self) :
 
         trade = KiteApi.ins().currentTradePosition
         if trade.tradeType == LONG :
-            self.window.icon_trade_type.setIcon('icons/icon_arrow_long.png')    
+            self.window.icon_trade_type.setIcon(QIcon('icons/icon_arrow_long.png'))    
         else :
-            self.window.icon_trade_type.setIcon('icons/icon_arrow_short.png')    
+            self.window.icon_trade_type.setIcon(QIcon('icons/icon_arrow_short.png'))    
 
         if trade.strategy == AGGRESIVE :
             self.window.label_strategy.setText('AT')
@@ -309,46 +372,68 @@ class TradeWindow(QMainWindow):
             self.window.label_strategy.setText('BT')
 
         self.window.label_instrument.setText(trade.tickerSymbol)
-        self.window.label_trade_qty.setText(trade.qty)
-        self.window.label_avg_price.setText(trade.entryPrice)
-        self.window.label_trade_ltp.setText(trade.ltp)
+        self.window.label_trade_qty.setText(str(trade.qty))
+        self.window.label_avg_price.setText(str(trade.entryPrice))
+        self.window.label_trade_ltp.setText(str(trade.ltp))
 
-        self.window.spin_sl.setValue(trade.stoplossPrice)
-        self.updateSLMaxPrice(trade.ltp)
+        self.window.et_stoploss.setText(str(trade.stoplossPrice))
+        self.window.et_stoploss.setEnabled(False)
+        ##self.updateSLMaxPrice(trade.ltp)
 
         self.updateLabelRiskAmount(trade.riskAmount)
         self.updateLabelUnrealisedRewardAmount(trade.unRealisedProfit)
 
+
         self.window.label_no_position.hide()
         self.window.frame_trade.show()
+        self.window.btn_exit.setText("Exit")
+        self.window.btn_exit.setStyleSheet(cssBtnExit)
+        self.window.btn_exit.show()
+        self.window.btn_execute.hide()
+
+
 
     def clickedIncreaseSL(self) :
+        KiteApi.ins().currentTradePosition.incrementSl()
+        self.window.et_stoploss.setText(str(KiteApi.ins().currentTradePosition.stoplossPrice))
+        self.updateLabelRiskAmount(KiteApi.ins().currentTradePosition.riskAmount)
         return
     
     def clickeddedcreaseSL(self) :
+        if KiteApi.ins().currentTradePosition.stoplossPrice < 1 :
+            return
+
+        KiteApi.ins().currentTradePosition.decrementSl()
+        
+        self.window.et_stoploss.setText(str(KiteApi.ins().currentTradePosition.stoplossPrice))
+        self.updateLabelRiskAmount(KiteApi.ins().currentTradePosition.riskAmount)
         return
+    
+    def updateOptionsLtp(self, ltp) :
+        KiteApi.ins().currentTradePosition.updateLtp(ltp)
+        self.window.label_trade_ltp.setText(str(ltp))
+        
+    """def updateSLMaxPrice(self, optiosLtp) :
+        self.window.spin_sl.setMaximum(optiosLtp + 5)
+        self.window.spin_sl.setMinimum(0)
+        return"""
     
     def clickedEditSL(self) :
 
-        if self.window.spin_sl.isEnabled() : 
+        if self.window.et_stoploss.isEnabled() : 
              ## set Risk
-             self.window.spin_sl.setEnabled(False)
+             self.window.et_stoploss.setEnabled(False)
              self.window.btn_edit_sl.setIcon(QIcon('icons/btn_edit_sl.png'))
-             self.window.spin_sl.setStyleSheet(cssEtEditRiskDisabled)
-             KiteApi.ins().currentTradePosition.setStoploss(int(self.window.spin_sl.text()))
+             self.window.et_stoploss.setStyleSheet(cssEtEditRiskDisabled)
+             KiteApi.ins().currentTradePosition.setStoploss(int(self.window.et_stoploss.text()))
 
         else:
             ## edit risk
-            self.window.spin_sl.setEnabled(True)
+            self.window.et_stoploss.setEnabled(True)
             self.window.btn_edit_sl.setIcon(QIcon('icons/btn_set_sl.png'))
-            self.window.spin_sl.setStyleSheet(cssEtEditRiskEnabled)
+            self.window.et_stoploss.setStyleSheet(cssEtEditRiskEnabled)
 
         return    
-    
-    def updateSLMaxPrice(self, optiosLtp) :
-        self.window.spin_sl.setMaximum(optiosLtp)
-        self.window.spin_sl.setMinimum(0)
-        return
     
     def updateLabelRiskAmount(self, riskAmount) :
         if riskAmount < 0 :
@@ -356,25 +441,27 @@ class TradeWindow(QMainWindow):
         else :
            riskStr = str(riskAmount)
 
-        if riskAmount < 0 :  self.window.label_profit.setStyleSheet(cssMTMGreen) 
-        else : self.window.label_profit.setStyleSheet(cssMTMRed)
+        if riskAmount < 0 :  self.window.label_risk.setStyleSheet(cssMTMGreen) 
+        elif riskAmount == 0 : self.window.label_risk.setStyleSheet(cssMTMWhite)
+        else : self.window.label_risk.setStyleSheet(cssMTMRed)
         
         self.window.label_risk.setText(riskStr)
         return
     
     def updateLabelUnrealisedRewardAmount(self, rewardAmount) :
-        if rewardAmount < 0 :
+        if rewardAmount <= 0 :
             rewardStr = str(rewardAmount)
         else :
             rewardStr = "+" + str(rewardAmount)
 
         if rewardAmount < 0 :  self.window.label_profit.setStyleSheet(cssMTMRed) 
+        elif rewardAmount == 0 : self.window.label_profit.setStyleSheet(cssMTMWhite)
         else : self.window.label_profit.setStyleSheet(cssMTMGreen)
         
         self.window.label_profit.setText(rewardStr)
         return
     
-    def updateMtMAmount(self, MTM) :
+    def updateLabelMtMAmount(self, MTM) :
         if MTM < 0 :
             rewardStr = str(MTM)
         else :
@@ -388,31 +475,47 @@ class TradeWindow(QMainWindow):
     
     def clickedExitTrade(self) :
         status = KiteApi.ins().exitCurrentPosition()
+
         if status == ORDER_PLACED :
-            self.updateOrderStatus("Exiting...")
+            self.updateStatusBar("Exit Order Placed!", delayReset= True)
         elif status == ORDER_ERROR :
-            self.updateStatusBar("Order Exiting Error", delayReset= True)
+            print("Kite Order Error")
+            if self.orderPlaceErrorTimer is not None :
+                self.orderPlaceErrorTimer.cancel()
+            self.orderPlaceErrorTimer = threading.Timer(5.0, self.checkResponseFromExitOrderupdate)
+            self.orderPlaceErrorTimer.start()
+            self.exitButtonUIupdate(1)
+
+        if status == ORDER_PLACED :
+            self.updateOrderStatusLabel("Exiting...")
+
         return
     
-    def updateOrderStatus(self,str, delayedHide = False) : 
+    """def updateOrderStatusLabel(self,str, delayedHide = False) : 
         self.window.label_order_status.show()
         self.window.label_order_status.setText(str)
         if delayedHide : 
             if self.orderStatusTimer is not None :
                 self.orderStatusTimer.cancel()
             self.orderStatusTimer = threading.Timer(2.0, self.hideOrderstatus)
-            self.orderStatusTimer.start()
+            self.orderStatusTimer.start()"""
 
     def hideOrderstatus(self) : 
         self.window.label_order_status.hide()
 
     def exitOrderExecuted(self) :
-        self.updateOrderStatus("Exited")
-        self.window.label_order_status.hide()
         KiteApi.ins().addLastTradeToTradesList()
         KiteApi.ins().currentTradePosition = None
+
+        self.window.btn_execute.show()
+        self.window.btn_execute.setEnabled(True)
+        self.window.btn_execute.setText("Execute")
+        self.window.btn_execute.setStyleSheet(cssBtnExecute)
+        self.window.btn_exit.hide()
+        
         self.window.frame_trade.hide()
         self.window.label_no_position.show()
+
     
     """Callbacks
     ---------
@@ -452,7 +555,7 @@ class TradeWindow(QMainWindow):
     def onTicks(self, ws, ticks) :
         # Callback to receive ticks.
         #logging.debug("Ticks: {}".format(ticks))
-        print("tick recived")
+        #print("tick recived")
         self.ticksThread.setTickReceived(ticks)
         return
     
@@ -469,28 +572,29 @@ class TradeWindow(QMainWindow):
             if KiteApi.ins().currentTradePosition is not None :
                 trade = KiteApi.ins().currentTradePosition
                 if tick['instrument_token'] == trade.tickerToken :
-                    trade.updateLtp(tick['last_price'])
+                    self.updateOptionsLtp(tick['last_price'])
+                    ##self.updateSLMaxPrice(tick['last_price'])
+
 
         preDiff = round(KiteApi.ins().bnfLtp - KiteApi.ins().bnfSpotLtp, 1)
         self.window.label_future_diff.setText(str(preDiff))        
 
+        self.updateSpotSLMinMax(KiteApi.ins().bnfLtp)
 
         KiteApi.ins().setLTPforRequiredTokens(ticks)
 
         if KiteApi.ins().currentTradePosition is not None :
             trade = KiteApi.ins().currentTradePosition
-            unRealisedMtm = KiteApi.ins().finalPnL + trade.unRealisedProfit
-            self.updateMtMAmount(unRealisedMtm)
-            self.updateLabelUnrealisedRewardAmount(trade.unRealisedProfit)
-
+            
             if trade.tradeEntryStatus == EXECUTED :
+
+                unRealisedMtm = KiteApi.ins().finalPnL + trade.unRealisedProfit
+                self.updateLabelMtMAmount(round(unRealisedMtm, 2))
+                self.updateLabelUnrealisedRewardAmount(trade.unRealisedProfit)
+
                 if KiteApi.ins().tokensLtp[trade.tickerToken] <= trade.stoplossPrice :
                     self.clickedExitTrade()
-                
-                    print('Alert : Position SL hit, Exiting the trade')
-
-
-
+                    print('TRADE ALERT : Position SL hit, Exiting the trade')
 
         end_time = time.time()
         time_taken = end_time - start_time
@@ -529,9 +633,82 @@ class TradeWindow(QMainWindow):
         else :
             self.updateStatusBar("Internet issue closed connection !  ")
         return
+    
     def onOrderUpdate(self, ws, data) :
+        self.orderUpdateraceLock.acquire()
+        if KiteApi.ins().currentTradePosition is not None :
+            trade = KiteApi.ins().currentTradePosition
 
-        logging.debug("Order Update: {}".format(data))
+            if trade.tickerToken == data['instrument_token'] and data['transaction_type'] == BUY :
+
+                trade.entryOrderId = data['order_id']
+
+                if data['status'] == STATUS_OPEN:
+                    trade.updateTradeEntryStatus(PENDING)
+                    self.updateStatusBar(">>> Order Waiting for execution...")
+                    print('ORDER UPDATE : >>> Entry Order Pending')
+                if data['status'] == STATUS_COMPLETE :
+                    self.entryOrderExecuted()
+                    trade.updateTradeEntryStatus(EXECUTED, data['average_price'])
+                    self.updateStatusBar(">>> Order executed!", True)
+                    print('ORDER UPDATE : >>> Entry Order Executed at' + str(data['average_price']))
+
+                if data['status'] == STATUS_CANCELLED :
+                    
+                    trade.updateTradeEntryStatus(CANCELLED, data['average_price'])
+                    self.updateStatusBar(">>> Order Cancelled !", True)
+                    print('ORDER UPDATE : >>> Entry Order Cancelled due to ' + data['status_message'])
+                    KiteApi.ins().currentTradePosition = None
+                    self.executeButtonUIupdate(0)
+                    self.window.frame_trade.hide()
+                    self.window.label_no_position.show()
+                    self.orderUpdateraceLock.release()
+                    return
+
+                if data['status'] == STATUS_REJECTED :
+                    trade.updateTradeEntryStatus(REJECTED, data['average_price'])
+                    self.updateStatusBar(">>> Rejected | " + data['status_message'], True)
+                    print('ORDER UPDATE : >>> Entry Order Rejected due to ' + data['status_message'])
+                    KiteApi.ins().currentTradePosition = None
+                    self.executeButtonUIupdate(0)
+                    self.window.frame_trade.hide()
+                    self.window.label_no_position.show()
+                    self.orderUpdateraceLock.release()
+                    return
+
+            if trade.tickerToken == data['instrument_token'] and data['transaction_type'] == SELL :
+
+                trade.exitOrderId = data['order_id']
+
+                if data['status'] == STATUS_OPEN:
+                    trade.updateTradeExitStatus(PENDING)
+                    self.updateStatusBar("<<< Order Waiting for execution...")
+                    print('ORDER UPDATE : <<< Exit Order Pending')
+
+                if data['status'] == STATUS_COMPLETE :
+                    
+                    trade.updateTradeExitStatus(EXECUTED, data['average_price'])
+                    self.exitOrderExecuted()
+                    self.updateStatusBar("<<< Order executed!")
+                    print('ORDER UPDATE : <<< Exit Order Executed at' + str(data['average_price']))
+
+                if data['status'] == STATUS_CANCELLED :
+                    trade.updateTradeExitStatus(CANCELLED, data['average_price'])
+                    self.updateStatusBar("<<< Exit Order cancelled, Need manual Intervention", True)
+                    self.exitButtonUIupdate(0)
+                    print('ORDER UPDATE : <<< Exit Order Cancelled due to ' + data['status_message'])
+
+                if data['status'] == STATUS_REJECTED :
+                    trade.updateTradeExitStatus(REJECTED, data['average_price'])
+                    self.updateOrderStatusLabel("Exit Rejected", True)
+                    self.updateStatusBar("<<< Exit Order Rejected, Need manual Intervention", True)
+                    self.exitButtonUIupdate(0)
+                    print('ORDER UPDATE : <<< Exit Order Rejected due to ' + data['status_message'])
+
+
+        self.orderUpdateraceLock.release()
+
+        #logging.debug("Order Update: {}".format(data))
         return
     
 

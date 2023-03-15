@@ -5,6 +5,8 @@ import datetime
 EXECUTED = 1
 PENDING = -1
 CANCELLED = -2
+REJECTED = -3
+NO_RESPONSE = 0
 
 class Trade() :
 
@@ -31,28 +33,41 @@ class Trade() :
 
     """
 
-    def __init__(self, entryOrderId, tickerToken, tradeType, stg, sym, qty, ltp, slPoints) :
-       self.entryOrderId =  entryOrderId
+    def __init__(self, tickerToken, tradeType, stg, sym, qty, ltp, slPoints) :
+       self.tradeEntryStatus = NO_RESPONSE
+       self.tradeExitStatus = NO_RESPONSE
+       self.entryOrderId =  0
+       self.exitOrderId = 0
        self.tickerToken = tickerToken
        self.tradeType = tradeType
        self.strategy = stg
 
+
        self.tickerSymbol = sym
        self.qty = qty
+       self.ltp = ltp
        self.stoplossPoints = slPoints
-       self.stoplossPrice = ltp - slPoints
-       self.riskAmount = self.qty*self.stoplossPrice
+       self.stoplossPrice = int(ltp - slPoints)
+       self.riskAmount = round(self.qty*self.stoplossPoints,2)
 
+       self.ltp = ltp
+
+
+       self.entryPrice = 0
+       self.exitPrice = 0
        self.unRealisedProfit = 0
        self.unRealisedProfitInPoints = 0
        self.tag = ""
        self.notes = ""
+       
+
 
     def setStoploss(self, sl) :
         if self.tradeEntryStatus == EXECUTED :
+            if sl < 1 : sl = 0
             self.stoplossPrice = sl
             self.stoplossPoints = self.entryPrice - sl
-            self.riskAmount = self.qty*self.stoplossPoints
+            self.riskAmount = round(self.qty*self.stoplossPoints,2)
 
     def updateTradeEntryStatus(self, status, executedPrice = 0) :
         self.tradeEntryStatus = status
@@ -62,15 +77,16 @@ class Trade() :
     def updateTradeExitStatus(self, status, executedPrice = 0) :
         if (status == EXECUTED) :
             self.tradeExitTime = datetime.datetime.now()
+            self.realisedProfit = round((executedPrice-self.entryPrice) * self.qty,2)
+            self.realisedProfitInPoints = executedPrice-self.entryPrice
         self.tradeExitStatus = status
         self.exitPrice = executedPrice
-        self.realisedProfit = (executedPrice-self.entryPrice) * self.qty
-        self.realisedProfitInPoints = executedPrice-self.entryPrice
-    
+        
+
     def updateLtp(self, ltp):
         self.ltp = ltp
-        self.unRealisedProfit = (ltp-self.entryPrice) * self.qty
-        self.unRealisedProfitInPoints = ltp-self.entryPrice
+        self.unRealisedProfit = round((ltp - self.entryPrice) * self.qty,2)
+        self.unRealisedProfitInPoints = round(ltp - self.entryPrice, 1)
 
     def incrementSl(self) :
         self.stoplossPrice += 1
