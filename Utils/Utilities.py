@@ -65,7 +65,6 @@ class TickLooperThread(QThread):
         self.ticks = {}
 
     def setTickReceived(self,ticks) :
-
         self.ticks = ticks
 
     def run(self):

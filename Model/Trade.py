@@ -7,6 +7,14 @@ PENDING = -1
 CANCELLED = -2
 REJECTED = -3
 NO_RESPONSE = 0
+NOT_INITIATED = -4
+INITIATED = -5
+
+KEY_LONG = "long"
+KEY_SHORT = "short"
+
+KEY_CE = "CE"
+KEY_PE = "PE"
 
 class Trade() :
 
@@ -33,16 +41,17 @@ class Trade() :
 
     """
 
-    def __init__(self, tickerToken, tradeType, stg, sym, qty, ltp, slPoints) :
-       self.tradeEntryStatus = NO_RESPONSE
-       self.tradeExitStatus = NO_RESPONSE
+    def __init__(self, tickerToken, tradeType, stg, sym, qty, ltp, slPoints, strike) :
+       self.tradeEntryStatus = NOT_INITIATED
+       self.tradeExitStatus = NOT_INITIATED
        self.entryOrderId =  0
        self.exitOrderId = 0
        self.tickerToken = tickerToken
        self.tradeType = tradeType
        self.strategy = stg
 
-
+       ce_or_pe = KEY_CE if tradeType != KEY_SHORT else KEY_PE
+       self.strikeStr = str(strike) + " " + ce_or_pe
        self.tickerSymbol = sym
        self.qty = qty
        self.ltp = ltp
@@ -71,18 +80,19 @@ class Trade() :
 
     def updateTradeEntryStatus(self, status, executedPrice = 0) :
         self.tradeEntryStatus = status
-        self.entryPrice = executedPrice
         if (status == EXECUTED) :
             self.tradeEntryTime = datetime.datetime.now()
+            self.entryPrice = executedPrice
+
     def updateTradeExitStatus(self, status, executedPrice = 0) :
         if (status == EXECUTED) :
             self.tradeExitTime = datetime.datetime.now()
+            self.exitPrice = executedPrice
             self.realisedProfit = round((executedPrice-self.entryPrice) * self.qty,2)
             self.realisedProfitInPoints = executedPrice-self.entryPrice
         self.tradeExitStatus = status
-        self.exitPrice = executedPrice
         
-
+        
     def updateLtp(self, ltp):
         self.ltp = ltp
         self.unRealisedProfit = round((ltp - self.entryPrice) * self.qty,2)

@@ -42,6 +42,10 @@ ORDER_ERROR_0_POSITION_SIZING = "ordererror_0_position_sizing"
 EXECUTED = 1
 PENDING = -1
 CANCELLED = -2
+REJECTED = -3
+NO_RESPONSE = 0
+NOT_INITIATED = -4
+INITIATED = -5
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -120,7 +124,7 @@ class KiteApi() :
     
     def getAllRequiredInstrumentListTokens(self) :
         tokenList = [int(x) for x in self.localRequirmentList['instrument_token'].tolist()]
-        print(tokenList)
+        #print(tokenList)
         return tokenList
     
     def setRequiredOptionsDf(self) : 
@@ -158,8 +162,8 @@ class KiteApi() :
         result = "Success"
 
         todayDateStr = dt.date.today().strftime("%d-%m-%Y")
-        filename = todayDateStr + "trades_logs.csv"
-        tradeFilePath = "G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\trades_log\\"+filename
+        filename = todayDateStr + "_trades.csv"
+        tradeFilePath = "G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\trades_logs\\"+filename
 
         if os.path.exists(tradeFilePath) :
            tradeDf =  pd.read_csv(tradeFilePath, parse_dates = ['entry_time', 'exit_time'])
@@ -400,7 +404,8 @@ class KiteApi() :
 
         # Place an order
         try:
-            self.currentTradePosition = Trade(tickerToken, type, stg, tradingSymbol, qty, ltp, slPoints)
+            self.currentTradePosition = Trade(tickerToken, type, stg, tradingSymbol, qty, ltp, slPoints, strike)
+            self.currentTradePosition.tradeEntryStatus = INITIATED
             order_id = self.kite.place_order(tradingsymbol=tradingSymbol,
                                         exchange=self.kite.EXCHANGE_NFO,
                                         transaction_type=self.kite.TRANSACTION_TYPE_BUY,
@@ -416,6 +421,7 @@ class KiteApi() :
             logging.info("Order placed. ID is: {}".format(order_id))
 
         except kiteconnect.exceptions.TokenException as e:
+            
             status = ORDER_ERROR
             logging.error("TokenException occurred: {}".format(str(e)))
         except kiteconnect.exceptions.InputException as e:
@@ -431,6 +437,7 @@ class KiteApi() :
             status = ORDER_ERROR
             logging.error("GeneralException occurred: {}".format(str(e)))
         except Exception as e :
+            logging.error("Other exception occurred: {}".format(str(e)))
             status = ORDER_ERROR
 
         
@@ -438,7 +445,10 @@ class KiteApi() :
         end_time = time.time()
         time_taken = end_time - start_time
 
-        print(f"Time taken to Place order: {time_taken} seconds")
+        if status == ORDER_ERROR : 
+            self.currentTradePosition.tradeEntryStatus = NO_RESPONSE
+
+        print(f">>> Time taken to place Entry order: {time_taken} seconds")
         return status
     
         self.executionRaceLock.release() 
@@ -455,6 +465,7 @@ class KiteApi() :
 
         trade = self.currentTradePosition
         try:
+            trade.tradeExitStatus = INITIATED
             order_id = self.kite.place_order(tradingsymbol=trade.tickerSymbol,
                                         exchange=self.kite.EXCHANGE_NFO,
                                         transaction_type=self.kite.TRANSACTION_TYPE_SELL,
@@ -470,19 +481,25 @@ class KiteApi() :
             return ORDER_PLACED 
         except kiteconnect.exceptions.TokenException as e:
             logging.error("TokenException occurred: {}".format(str(e)))
-            return ORDER_ERROR 
+            status = ORDER_ERROR 
         except kiteconnect.exceptions.InputException as e:
             logging.error("InputException occurred: {}".format(str(e)))
-            return ORDER_ERROR 
+            status = ORDER_ERROR 
         except kiteconnect.exceptions.OrderException as e:
             print("Order placement failed. Reason:", e.message)
-            return ORDER_ERROR 
+            status = ORDER_ERROR 
         except kiteconnect.exceptions.NetworkException as e:
             logging.error("NetworkException occurred: {}".format(str(e)))
-            return ORDER_ERROR 
+            status = ORDER_ERROR 
         except kiteconnect.exceptions.GeneralException as e:
             logging.error("GeneralException occurred: {}".format(str(e)))
-            return ORDER_ERROR 
+            status = ORDER_ERROR 
+        
+        if status == ORDER_ERROR :
+            trade.tradeExitStatus = NO_RESPONSE
+
+        return status
+
 
     def addLastTradeToTradesList(self) : 
         self.tradesList.append(self.currentTradePosition.getAsDict())
@@ -490,9 +507,9 @@ class KiteApi() :
         tradesDf = pd.DataFrame(self.tradesList)
 
         todayDateStr = dt.date.today().strftime("%d-%m-%Y")
-        filename = todayDateStr + "trades_log.csv"
+        filename = todayDateStr + "_trades.csv"
         tradeFilePath = "G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\trades_logs\\"+filename
-        tradesDf.to_csv(tradeFilePath)
+        tradesDf.to_csv(tradeFilePath, index = False)
 
     
 
