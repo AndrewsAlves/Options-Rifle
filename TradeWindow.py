@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QApplication, QWidget, QPushButton,QMainWindow,QFrame,QLabel
 from PySide6  import  QtCore
 from PySide6.QtGui import *
-from PySide6.QtCore  import  QFile,QIODevice
+from PySide6.QtCore  import  QFile,QIODevice,QTimer,QDateTime
 from PySide6.QtUiTools import QUiLoader
 import sys
 import logging
@@ -10,8 +10,6 @@ from Utils.Utilities import WorkerThread,WorkerLoopedThread,TickLooperThread
 import time
 import threading 
 from Utils import Utilities
-
-
 
 cssBtnEnabled = "background-color: #F3EF52;""color: #27292F;""border-radius: 15px;"
 cssBtnDisabled = "color: #757575;" "background-color: #27292F;" "border-radius: 15px;" "border: 2px solid #9F9F9F;"
@@ -92,6 +90,7 @@ class TradeWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+
         self.onTickRaceLock = threading.Lock()
         self.tickLooperraceLock = threading.Lock()
         self.orderUpdateraceLock = threading.Lock()
@@ -109,6 +108,8 @@ class TradeWindow(QMainWindow):
         self.orderStatusTimer = None
         self.orderPlaceErrorTimer = None
 
+        self.updateQTProcesEvents = WorkerLoopedThread(self.process_events, loopsEverySec = 30)
+        self.updateQTProcesEvents.start()
 
         ui_file_name = "ui_templates/options_rifle_UI_2.ui"
         ui_file = QFile(ui_file_name)
@@ -282,7 +283,7 @@ class TradeWindow(QMainWindow):
     
     def executionThreadFunc(self) :
         slPrice = self.window.spin_stoploss.value()
-        
+        self.executeButtonUIupdate(1)
         status = KiteApi.ins().executeTrade(self.tradeType, slPrice, self.riskPerTrade,self.stg)
         if status == ORDER_PLACED :
             self.updateStatusBar("Entry Order Placed!", delayReset= True)
@@ -292,10 +293,11 @@ class TradeWindow(QMainWindow):
                 self.orderPlaceErrorTimer.cancel()
             self.orderPlaceErrorTimer = threading.Timer(5.0, self.checkResponseFromEntryOrderupdate)
             self.orderPlaceErrorTimer.start()
+
         elif status == ORDER_ERROR_0_POSITION_SIZING :
             self.updateStatusBar("0 Qty possible", delayReset= True)
+            self.executeButtonUIupdate(0)
 
-        self.executeButtonUIupdate(1)
 
     
     def checkResponseFromEntryOrderupdate(self) :
@@ -411,7 +413,7 @@ class TradeWindow(QMainWindow):
 
         self.window.et_stoploss.setText(str(trade.stoplossPrice))
         self.window.et_stoploss.setEnabled(False)
-        self.window.btn_edit_sl.hide()
+        #self.window.btn_edit_sl.hide()
 
         ##self.updateSLMaxPrice(trade.ltp)
 
@@ -465,6 +467,7 @@ class TradeWindow(QMainWindow):
         else:
             ## edit risk
             self.window.et_stoploss.setEnabled(True)
+            self.window.et_stoploss.setFocus()
             self.window.btn_edit_sl.setIcon(QIcon('icons/btn_set_sl.png'))
             self.window.et_stoploss.setStyleSheet(cssEtEditSlEnabled)
 
@@ -615,6 +618,7 @@ class TradeWindow(QMainWindow):
 
                 if KiteApi.ins().tokensLtp[trade.tickerToken] <= trade.stoplossPrice :
                     if trade.tradeExitStatus == NOT_INITIATED:
+                        trade.tradeExitStatus = INITIATED
                         self.clickedExitTrade()
                         print('TRADE ALERT : Position SL hit, Exiting the trade')
 
@@ -737,6 +741,21 @@ class TradeWindow(QMainWindow):
     
 
    
+    #############################################################################################
+    #############################################################################################
+    #############################################################################################
+    #############################################################################################
+    #############################################################################################
+    #############################################################################################
+    #############################################################################################
+
+    def timerEventCheckWidnowA(self, event):
+        if not self.isActiveWindow():
+            print('Window is inactive')
+
+    def process_events(self):
+        QApplication.processEvents()
+        print("Processed QT events at", QDateTime.currentDateTime().toString())
 
 
 

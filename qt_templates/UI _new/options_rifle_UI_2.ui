@@ -359,7 +359,7 @@
       <x>30</x>
       <y>833</y>
       <width>91</width>
-      <height>21</height>
+      <height>24</height>
      </rect>
     </property>
     <property name="font">
@@ -1103,7 +1103,7 @@ QPushButton :hover {
     <property name="geometry">
      <rect>
       <x>126</x>
-      <y>833</y>
+      <y>834</y>
       <width>21</width>
       <height>21</height>
      </rect>
@@ -1658,8 +1658,8 @@ border:1px solid #FFFFFF;</string>
       </property>
       <property name="iconSize">
        <size>
-        <width>18</width>
-        <height>18</height>
+        <width>20</width>
+        <height>20</height>
        </size>
       </property>
      </widget>

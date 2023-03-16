@@ -39,14 +39,16 @@ ORDER_PLACED = "orderplaced"
 ORDER_ERROR = "ordererror"
 ORDER_ERROR_0_POSITION_SIZING = "ordererror_0_position_sizing"
 
+
+NOT_INITIATED = -4
+INITIATED = -5
+NO_RESPONSE = 0
 EXECUTED = 1
 PENDING = -1
 CANCELLED = -2
 REJECTED = -3
-NO_RESPONSE = 0
-NOT_INITIATED = -4
-INITIATED = -5
 
+DEBUG_MODE = True
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -55,7 +57,7 @@ class KiteApi() :
     __instance = None
 
     def __init__(self) : 
-        self.kite = KiteConnect(api_key=API_KEY)    
+        self.kite = KiteConnect(api_key=API_KEY, timeout= 10)    
         self.localRequirmentList = None
         self.upcomingFutureExpiry = None
         self.upcomingOptionsExpiry = None
@@ -329,8 +331,11 @@ class KiteApi() :
 
         ce_or_pe = KEY_CE if type != KEY_SHORT else KEY_PE
 
+        strike_diff = -1
+        if DEBUG_MODE :
+            strike_diff = 7
 
-        strike = Utils.Utilities.getStrikePrice(self.bnfSpotLtp,ce_or_pe, 7)
+        strike = Utils.Utilities.getStrikePrice(self.bnfSpotLtp,ce_or_pe, strike_diff)
 
         try :
             df = self.getSelectedStrikeOption(KEY_BANKNIFTY_FUT, ce_or_pe, self.upcomingOptionsExpiry, strike)
@@ -390,16 +395,15 @@ class KiteApi() :
 
         delta = float(c.callDelta) if type != KEY_SHORT else float(c.putDelta)
         slPoints = abs(int(round(slSpotPoints * delta)))
-        qty = Utils.Utilities.getPositionsSizing(slPoints, maxRiskPerTrade,lotSize)
+        qty = Utils.Utilities.getPositionsSizing(slPoints, maxRiskPerTrade,lotSize, debug = DEBUG_MODE)
 
 
         if qty == 0 :
-            self.executionRaceLock.release() 
             end_time = time.time()
             time_taken = end_time - start_time
             print(f"Time taken to Place order: {time_taken} seconds")
             print("ERROR : Quantity Not satisfied with Risk per trade and Stoploss")
-
+            self.executionRaceLock.release() 
             return ORDER_ERROR_0_POSITION_SIZING
 
         # Place an order

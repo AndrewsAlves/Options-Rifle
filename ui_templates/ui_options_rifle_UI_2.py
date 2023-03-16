@@ -114,7 +114,7 @@ class Ui_main(object):
         self.et_risk = QLineEdit(self.MainWinodw2)
         self.et_risk.setObjectName(u"et_risk")
         self.et_risk.setEnabled(True)
-        self.et_risk.setGeometry(QRect(30, 833, 91, 21))
+        self.et_risk.setGeometry(QRect(30, 833, 91, 24))
         self.et_risk.setFont(font2)
         self.et_risk.setStyleSheet(u"QLineEdit {\n"
 "        background-color: #0000000;\n"
@@ -279,7 +279,7 @@ class Ui_main(object):
         self.label_stoploss.setStyleSheet(u"color:white")
         self.btn_editrisk = QPushButton(self.MainWinodw2)
         self.btn_editrisk.setObjectName(u"btn_editrisk")
-        self.btn_editrisk.setGeometry(QRect(126, 833, 21, 21))
+        self.btn_editrisk.setGeometry(QRect(126, 834, 21, 21))
         self.btn_editrisk.setFont(font3)
         self.btn_editrisk.setStyleSheet(u"background:#00000000")
         icon = QIcon()
@@ -437,7 +437,7 @@ class Ui_main(object):
         icon4 = QIcon()
         icon4.addFile(u"../../icons/btn_edit_sl.png", QSize(), QIcon.Normal, QIcon.Off)
         self.btn_edit_sl.setIcon(icon4)
-        self.btn_edit_sl.setIconSize(QSize(18, 18))
+        self.btn_edit_sl.setIconSize(QSize(20, 20))
         self.border_label_2.raise_()
         self.btn_increase_sl.raise_()
         self.btn_decrease_sl.raise_()

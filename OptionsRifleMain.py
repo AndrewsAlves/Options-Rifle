@@ -27,9 +27,7 @@ if __name__ == "__main__":
 
     print ("Starting Application")
     optionsRifle = OptionsRifleMain.get_instance()
-
     LoginWindow.get_instance().show()
-
     sys.exit(optionsRifle.app.exec())
     
 

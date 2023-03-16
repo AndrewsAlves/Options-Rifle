@@ -1,6 +1,5 @@
 import datetime
-
-
+import KiteApi
 
 EXECUTED = 1
 PENDING = -1
@@ -138,6 +137,7 @@ class Trade() :
         tradeDic['pnl'] = self.realisedProfit
         tradeDic['tag'] = self.tag
         tradeDic['notes'] = self.notes
+        tradeDic['debug'] = KiteApi.DEBUG_MODE
 
         return tradeDic
 
