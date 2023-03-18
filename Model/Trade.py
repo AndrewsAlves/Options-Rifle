@@ -68,8 +68,6 @@ class Trade() :
        self.tag = ""
        self.notes = ""
        
-
-
     def setStoploss(self, sl) :
         if self.tradeEntryStatus == EXECUTED :
             if sl < 1 : sl = 0

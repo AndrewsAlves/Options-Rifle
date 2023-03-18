@@ -51,7 +51,7 @@ class WorkerLoopedThread(QThread):
 
 class TickLooperThread(QThread):
     stopped = Signal()
-    UpdateUi = Signal(str)
+    UpdateUi = Signal()
 
     def __init__(self, func, *args, **kwargs):
         super(TickLooperThread, self).__init__()
@@ -71,7 +71,7 @@ class TickLooperThread(QThread):
         print(__class__.__name__ + " : " +  self.startMessage)
         while self.is_running :
             self.func(self.ticks)
-            #self.finished.emit(res)
+            self.UpdateUi.emit()
             time.sleep(self.loopsEverySec)
 
         self.is_running = False

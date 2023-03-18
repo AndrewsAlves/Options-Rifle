@@ -11,6 +11,7 @@ import threading
 import time 
 from Model.Trade import Trade
 import logging
+from requests.exceptions import ReadTimeout
 
 
 API_KEY= "yzczdzxsmw9w9tq9"
@@ -37,6 +38,7 @@ MAXIMUM_STOPLOSS_SPOT = 200
 
 ORDER_PLACED = "orderplaced"
 ORDER_ERROR = "ordererror"
+ORDER_ERROR_READ_TIMEOUT = "readtimeout"
 ORDER_ERROR_0_POSITION_SIZING = "ordererror_0_position_sizing"
 
 
@@ -425,7 +427,6 @@ class KiteApi() :
             logging.info("Order placed. ID is: {}".format(order_id))
 
         except kiteconnect.exceptions.TokenException as e:
-            
             status = ORDER_ERROR
             logging.error("TokenException occurred: {}".format(str(e)))
         except kiteconnect.exceptions.InputException as e:
@@ -440,6 +441,8 @@ class KiteApi() :
         except kiteconnect.exceptions.GeneralException as e:
             status = ORDER_ERROR
             logging.error("GeneralException occurred: {}".format(str(e)))
+        except ReadTimeout as e:
+            status = ORDER_ERROR_READ_TIMEOUT
         except Exception as e :
             logging.error("Other exception occurred: {}".format(str(e)))
             status = ORDER_ERROR
@@ -498,13 +501,31 @@ class KiteApi() :
         except kiteconnect.exceptions.GeneralException as e:
             logging.error("GeneralException occurred: {}".format(str(e)))
             status = ORDER_ERROR 
-        
+        except ReadTimeout as e:
+            status = ORDER_ERROR_READ_TIMEOUT
+        except Exception as e :
+            logging.error("Other exception occurred: {}".format(str(e)))
+            status = ORDER_ERROR
+            
+    
         if status == ORDER_ERROR :
             trade.tradeExitStatus = NO_RESPONSE
 
         return status
-
-
+    
+    def sendEmptyOrderTokeepTheServerAlive(self) :
+        try:
+            order_id = self.kite.place_order(tradingsymbol="emptyTrade",
+                                            exchange=self.kite.EXCHANGE_NFO,
+                                            transaction_type=self.kite.TRANSACTION_TYPE_SELL,
+                                            quantity= 25,
+                                            variety=self.kite.VARIETY_REGULAR,
+                                            order_type=self.kite.ORDER_TYPE_MARKET,
+                                            product=self.kite.PRODUCT_MIS,
+                                            validity=self.kite.VALIDITY_DAY)
+        except Exception as e :
+            logging.error("Kite Order Heartbeat: {}".format(str(e)))
+            
     def addLastTradeToTradesList(self) : 
         self.tradesList.append(self.currentTradePosition.getAsDict())
         self.finalPnL =  sum(trade['pnl'] for trade in self.tradesList)
