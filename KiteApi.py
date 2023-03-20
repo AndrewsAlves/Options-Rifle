@@ -50,7 +50,8 @@ PENDING = -1
 CANCELLED = -2
 REJECTED = -3
 
-DEBUG_MODE = True
+DEBUG_MODE = False
+PAPER_TRADING = True
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -408,6 +409,12 @@ class KiteApi() :
             self.executionRaceLock.release() 
             return ORDER_ERROR_0_POSITION_SIZING
 
+
+        if PAPER_TRADING : 
+            self.currentTradePosition = Trade(tickerToken, type, stg, tradingSymbol, qty, ltp, slPoints, strike)
+            self.currentTradePosition.tradeEntryStatus = EXECUTED
+            return ORDER_PLACED
+
         # Place an order
         try:
             self.currentTradePosition = Trade(tickerToken, type, stg, tradingSymbol, qty, ltp, slPoints, strike)
@@ -471,6 +478,11 @@ class KiteApi() :
         status = ORDER_ERROR
 
         trade = self.currentTradePosition
+
+        if PAPER_TRADING : 
+            self.currentTradePosition.tradeExitStatus = EXECUTED
+            return ORDER_PLACED
+
         try:
             trade.tradeExitStatus = INITIATED
             order_id = self.kite.place_order(tradingsymbol=trade.tickerSymbol,
