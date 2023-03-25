@@ -68,7 +68,6 @@ ORDER_ERROR = "ordererror"
 ORDER_ERROR_0_POSITION_SIZING = "ordererror_0_position_sizing"
 ORDER_ERROR_READ_TIMEOUT = "readtimeout"
 
-
 EXECUTED = 1
 PENDING = -1
 CANCELLED = -2
@@ -193,8 +192,7 @@ class TradeWindow(QMainWindow):
                                                          self.onError,
                                                          self.onMessage,
                                                          self.onReConnect,
-                                                         self.onNoReConnect,
-                                                         self.onOrderUpdate)
+                                                         self.onNoReConnect)
         
         #self.greeksThread.start()
         self.ticksThread.start()
@@ -285,34 +283,14 @@ class TradeWindow(QMainWindow):
         return     
     
     def executionThreadFunc(self) :
-        slPrice = self.window.spin_stoploss.value()
+        slPoints = self.window.spin_stoploss.value()
         self.executeButtonUIupdate(1)
-        status = KiteApi.ins().executeTrade(self.tradeType, slPrice, self.riskPerTrade,self.stg)
-        if status == ORDER_PLACED :
-            self.updateStatusBar("Entry Order Placed!", delayReset= True)
-        elif status == ORDER_ERROR_READ_TIMEOUT:
-            self.updateStatusBar(">>> Entry Order request Timed Out! Try Again", delayReset= True)
-            self.executeButtonUIupdate(0)
-        elif status == ORDER_ERROR :
-            print("Kite Order Error")
-            if self.orderPlaceErrorTimer is not None :
-                self.orderPlaceErrorTimer.cancel()
-            self.orderPlaceErrorTimer = threading.Timer(5.0, self.checkResponseFromEntryOrderupdate)
-            self.orderPlaceErrorTimer.start()
-
-        elif status == ORDER_ERROR_0_POSITION_SIZING :
+        status = KiteApi.ins().executeTrade(self.tradeType, slPoints, self.riskPerTrade,self.stg)
+        if status == ORDER_ERROR_0_POSITION_SIZING :
             self.updateStatusBar("0 Qty possible", delayReset= True)
             self.executeButtonUIupdate(0)
-
-    def checkResponseFromEntryOrderupdate(self) :
-        if KiteApi.ins().currentTradePosition.tradeEntryStatus == NO_RESPONSE :
-            self.updateStatusBar("Kite order placing error... ", delayReset= True)
-            self.executeButtonUIupdate(0)
-
-    def checkResponseFromExitOrderupdate(self) :
-        if KiteApi.ins().currentTradePosition.tradeExitStatus == NO_RESPONSE :
-            self.updateStatusBar("Kite order placing error... ", delayReset= True)
-            self.exitButtonUIupdate(0)
+        else : 
+            self.onOrderUpdate("ENTER")
 
     def exitButtonUIupdate(self,exiting = 1) :
         if exiting == 1 :
@@ -482,29 +460,7 @@ class TradeWindow(QMainWindow):
         return
     
     def clickedExitTrade(self) :
-        status = KiteApi.ins().exitCurrentPosition()
-
-        if status == ORDER_PLACED :
-            self.updateStatusBar("Exit Order Placed!", delayReset= True)
-        elif status == ORDER_ERROR_READ_TIMEOUT:
-            self.updateStatusBar("<<< Exit Order request Timed Out! Try Again", delayReset= True)
-            self.executeButtonUIupdate(0)
-        elif status == ORDER_ERROR :
-            print("Kite Order Error")
-            if self.orderPlaceErrorTimer is not None :
-                self.orderPlaceErrorTimer.cancel()
-            self.orderPlaceErrorTimer = threading.Timer(5.0, self.checkResponseFromExitOrderupdate)
-            self.orderPlaceErrorTimer.start()
-            self.exitButtonUIupdate(1)
-
-    """def updateOrderStatusLabel(self,str, delayedHide = False) : 
-        self.window.label_order_status.show()
-        self.window.label_order_status.setText(str)
-        if delayedHide : 
-            if self.orderStatusTimer is not None :
-                self.orderStatusTimer.cancel()
-            self.orderStatusTimer = threading.Timer(2.0, self.hideOrderstatus)
-            self.orderStatusTimer.start()"""
+        self.onOrderUpdate("EXIT")
 
     def exitOrderExecuted(self) :
         KiteApi.ins().addLastTradeToTradesList()
@@ -552,8 +508,7 @@ class TradeWindow(QMainWindow):
                                                          self.onError,
                                                          self.onMessage,
                                                          self.onReConnect,
-                                                         self.onNoReConnect,
-                                                         self.onOrderUpdate)
+                                                         self.onNoReConnect)
         
 
     def onTicks(self, ws, ticks) :
@@ -565,8 +520,6 @@ class TradeWindow(QMainWindow):
         self.onTickRaceLock.release()
         return
     
-        
-
     def tickLooperThreadFunc(self, ticks) :
         self.tickLooperraceLock.acquire()
         start_time = time.time()
@@ -635,7 +588,23 @@ class TradeWindow(QMainWindow):
             self.updateStatusBar("Internet issue closed connection !  ")
         return
     
-    def onOrderUpdate(self, ws, data) :
+    def onOrderUpdate(self, type) : 
+        self.orderUpdateraceLock.acquire()
+        if KiteApi.ins().currentTradePosition is not None :
+            trade = KiteApi.ins().currentTradePosition
+            if type == "ENTRY" : 
+                trade.updateTradeEntryStatus(EXECUTED, trade.ltp)
+                self.entryOrderExecuted()
+                self.updateStatusBar(">>> Order executed!", True)
+                print('ORDER UPDATE : >>> Entry Order Executed at ' + str(trade.ltp))
+            if type == "EXIT" : 
+                trade.updateTradeExitStatus(EXECUTED, trade.ltp)
+                self.exitOrderExecuted()
+                self.updateStatusBar("<<< Order executed!")
+                print('ORDER UPDATE : <<< Exit Order Executed at ' + str(trade.ltp))
+        self.orderUpdateraceLock.release()
+        
+    """def onOrderUpdate(self, ws, data) :
         self.orderUpdateraceLock.acquire()
         if KiteApi.ins().currentTradePosition is not None :
             trade = KiteApi.ins().currentTradePosition
@@ -707,6 +676,7 @@ class TradeWindow(QMainWindow):
 
         #logging.debug("Order Update: {}".format(data))
         return
+        """
     
 
    
@@ -724,7 +694,7 @@ class TradeWindow(QMainWindow):
 
     def process_events(self):
         QApplication.processEvents()
-        KiteApi.ins().sendEmptyOrderTokeepTheServerAlive()
+        #KiteApi.ins().sendEmptyOrderTokeepTheServerAlive()
         print("Processed QT events at", QDateTime.currentDateTime().toString())
 
 
