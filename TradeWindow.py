@@ -290,7 +290,7 @@ class TradeWindow(QMainWindow):
             self.updateStatusBar("0 Qty possible", delayReset= True)
             self.executeButtonUIupdate(0)
         else : 
-            self.onOrderUpdate("ENTER")
+            self.onOrderUpdate("ENTRY")
 
     def exitButtonUIupdate(self,exiting = 1) :
         if exiting == 1 :
