@@ -185,7 +185,7 @@ class KiteApi() :
         if now > eight_thirty_am:
             filename = todayDateStr+"_required_instrument_list.csv"
 
-        requirmentsFilePath = "G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\"+filename
+        requirmentsFilePath = "G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\instrument_list\\"+filename
 
         ### Get todays trades if file exits
 
@@ -230,7 +230,7 @@ class KiteApi() :
         self.upcomingOptionsExpiry = pd.to_datetime(self.upcomingOptionsExpiry)
         self.upcomingFutureExpiry = pd.to_datetime(self.upcomingFutureExpiry)
         
-        self.localRequirmentList.to_csv("G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\" + filename, index= False)
+        self.localRequirmentList.to_csv("G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\instrument_list\\" + filename, index= False)
         
         return result
     
