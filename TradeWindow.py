@@ -169,7 +169,7 @@ class TradeWindow(QMainWindow):
         #self.window.et_stoploss.setValidator(self.slValidator)
 
         #inititalise Startup Parameters
-        self.clickedDefensive()
+        self.clickedBounce()
         self.clickedLong()
         self.window.spinner_ticker.addItem("BANKNIFTY")
         self.updateLabelMtMAmount(round(KiteApi.ins().finalPnL, 2))
