@@ -1928,6 +1928,30 @@ QPushButton :hover {
      <bool>false</bool>
     </property>
    </widget>
+   <widget class="QLabel" name="label_virtualtrading">
+    <property name="geometry">
+     <rect>
+      <x>224</x>
+      <y>472</y>
+      <width>97</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>10</pointsize>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">color:#9F9F9F</string>
+    </property>
+    <property name="text">
+     <string>Virtual Trading</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+    </property>
+   </widget>
    <zorder>btn_exit</zorder>
    <zorder>btn_long</zorder>
    <zorder>btn_aggresive</zorder>
@@ -1955,6 +1979,7 @@ QPushButton :hover {
    <zorder>btn_trans_label_Fut</zorder>
    <zorder>frame_trade</zorder>
    <zorder>label_no_position</zorder>
+   <zorder>label_virtualtrading</zorder>
   </widget>
   <widget class="QStatusBar" name="statusbar">
    <property name="styleSheet">
