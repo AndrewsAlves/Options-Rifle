@@ -50,7 +50,7 @@ PENDING = -1
 CANCELLED = -2
 REJECTED = -3
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -325,7 +325,7 @@ class KiteApi() :
 
         return
     
-    def executeTrade(self, type, SLSpot, maxRiskPerTrade, stg) : 
+    def executeTrade(self, type, SLSpotPoints, maxRiskPerTrade, stg) : 
 
         status = ORDER_ERROR
         start_time = time.time()
@@ -362,7 +362,7 @@ class KiteApi() :
         lotSize = df['lot_size']
         ltp = self.tokensLtp[tickerToken]
 
-        slSpotPoints = int(self.bnfLtp - SLSpot) if type != KEY_SHORT else int(SLSpot - self.bnfLtp)
+        #slSpotPoints = int(self.bnfLtp - SLSpot) if type != KEY_SHORT else int(SLSpot - self.bnfLtp)
 
         time_obj = dt.datetime.strptime(MARKET_CLOSE_TIME, '%H:%M:%S').time()
         timeToExpiration = dt.datetime.combine(expiry, time_obj)
@@ -396,7 +396,7 @@ class KiteApi() :
         slSpecial = slNormal + ((c.vega / 100) * 25)"""
 
         delta = float(c.callDelta) if type != KEY_SHORT else float(c.putDelta)
-        slPoints = abs(int(round(slSpotPoints * delta)))
+        slPoints = abs(int(round(SLSpotPoints * delta)))
         qty = Utils.Utilities.getPositionsSizing(slPoints, maxRiskPerTrade,lotSize, debug = DEBUG_MODE)
 
 

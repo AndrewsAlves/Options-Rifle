@@ -79,7 +79,7 @@ class Trade() :
         self.tradeEntryStatus = status
         if (status == EXECUTED) :
             self.tradeEntryTime = datetime.datetime.now()
-            self.entryPrice = executedPrice
+            self.entryPrice = round(executedPrice, 2)
 
     def updateTradeExitStatus(self, status, executedPrice = 0) :
         if (status == EXECUTED) :

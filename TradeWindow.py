@@ -140,17 +140,12 @@ class TradeWindow(QMainWindow):
         self.window.btn_aggresive.clicked.connect(self.clickedAggresive)
         self.window.btn_defensive.clicked.connect(self.clickedDefensive)
         self.window.btn_bounce.clicked.connect(self.clickedBounce)
-
         self.window.btn_long.clicked.connect(self.clickedLong)
         self.window.btn_short.clicked.connect(self.clickedShort)
-
-        #this button is a transparent button
-        self.window.btn_trans_label_Fut.clicked.connect(self.setFuturesSLInSpin)
-
         self.window.btn_editrisk.clicked.connect(self.clickedEditRisk)
-
         self.window.btn_execute.clicked.connect(self.clickedExecute)
 
+        self.window.spin_stoploss.setMinimum(10)
 
         ## SET BUTTONGS AND ITS FUNCTIONS FOR TRADE FRAME 
         self.window.btn_decrease_sl.clicked.connect(self.clickeddedcreaseSL)
@@ -253,7 +248,6 @@ class TradeWindow(QMainWindow):
     def clickedLong(self):
 
         self.tradeType = LONG
-        self.updateSpotSLMinMax(KiteApi.ins().bnfLtp)
         self.window.btn_long.setStyleSheet(cssBtnlongEnabled)
         self.window.btn_short.setStyleSheet(cssBtnShortDisabled)
         self.window.btn_long.setIcon(QIcon('icons/btn_long_enabled.png'))
@@ -263,16 +257,12 @@ class TradeWindow(QMainWindow):
     def clickedShort(self):
 
         self.tradeType = SHORT
-        self.updateSpotSLMinMax(KiteApi.ins().bnfLtp)
         self.window.btn_long.setStyleSheet(cssBtnlongDisabled)
         self.window.btn_short.setStyleSheet(cssBtnShortEnabled)
         self.window.btn_long.setIcon(QIcon('icons/btn_long_disabled.png'))
         self.window.btn_short.setIcon(QIcon('icons/btn_short_enabled.png'))
         return 
     
-    def setFuturesSLInSpin(self) :
-        self.window.spin_stoploss.setValue(KiteApi.ins().bnfLtp)
-        return
     
     def clickedEditRisk(self):
         if self.window.et_risk.isEnabled() : 
@@ -353,16 +343,7 @@ class TradeWindow(QMainWindow):
             self.statusBartimer.start()
     
     def resetStatusBarText(self) : 
-        self.updateStatusBar(" ")
-
-    def updateSpotSLMinMax(self,maxPrice) :
-        if maxPrice <= 0 : return
-        if self.tradeType == LONG :
-            self.window.spin_stoploss.setMaximum(maxPrice - 10)
-            self.window.spin_stoploss.setMinimum(0)
-        else :
-            self.window.spin_stoploss.setMaximum(9999999)
-            self.window.spin_stoploss.setMinimum(maxPrice + 10)
+        self.updateStatusBar(" ") 
 
     def updateLabelMtMAmount(self, MTM) :
         if MTM < 0 :
@@ -388,7 +369,7 @@ class TradeWindow(QMainWindow):
             unRealisedMtm = KiteApi.ins().finalPnL + trade.unRealisedProfit
             if trade.tradeEntryStatus == EXECUTED :
                 self.updateLabelMtMAmount(round(unRealisedMtm, 2))
-                self.updateLabelUnrealisedRewardAmount(trade.unRealisedProfit)
+                self.updateLabelUnrealisedRewardAmount(trade.unRealisedProfit, trade.unRealisedProfitInPoints)
 
     
     """
@@ -425,8 +406,8 @@ class TradeWindow(QMainWindow):
 
         ##self.updateSLMaxPrice(trade.ltp)
 
-        self.updateLabelRiskAmount(trade.riskAmount)
-        self.updateLabelUnrealisedRewardAmount(trade.unRealisedProfit)
+        self.updateLabelRiskAmount(trade.riskAmount, trade.stoplossPoints)
+        self.updateLabelUnrealisedRewardAmount(trade.unRealisedProfit, trade.unRealisedProfitInPoints)
 
 
         self.window.label_no_position.hide()
@@ -441,7 +422,7 @@ class TradeWindow(QMainWindow):
     def clickedIncreaseSL(self) :
         KiteApi.ins().currentTradePosition.incrementSl()
         self.window.et_stoploss.setText(str(KiteApi.ins().currentTradePosition.stoplossPrice))
-        self.updateLabelRiskAmount(KiteApi.ins().currentTradePosition.riskAmount)
+        self.updateLabelRiskAmount(KiteApi.ins().currentTradePosition.riskAmount, KiteApi.ins().currentTradePosition.stoplossPoints)
         return
     
     def clickeddedcreaseSL(self) :
@@ -451,7 +432,7 @@ class TradeWindow(QMainWindow):
         KiteApi.ins().currentTradePosition.decrementSl()
         
         self.window.et_stoploss.setText(str(KiteApi.ins().currentTradePosition.stoplossPrice))
-        self.updateLabelRiskAmount(KiteApi.ins().currentTradePosition.riskAmount)
+        self.updateLabelRiskAmount(KiteApi.ins().currentTradePosition.riskAmount, KiteApi.ins().currentTradePosition.stoplossPoints)
         return
     
     def clickedEditSL(self) :
@@ -462,7 +443,7 @@ class TradeWindow(QMainWindow):
              self.window.btn_edit_sl.setIcon(QIcon('icons/btn_edit_sl.png'))
              self.window.et_stoploss.setStyleSheet(cssEtEditSlDisabled)
              KiteApi.ins().currentTradePosition.setStoploss(int(self.window.et_stoploss.text()))
-             self.updateLabelRiskAmount(KiteApi.ins().currentTradePosition.riskAmount)
+             self.updateLabelRiskAmount(KiteApi.ins().currentTradePosition.riskAmount, KiteApi.ins().currentTradePosition.stoplossPoints)
 
         else:
             ## edit risk
@@ -474,11 +455,11 @@ class TradeWindow(QMainWindow):
 
         return    
     
-    def updateLabelRiskAmount(self, riskAmount) :
+    def updateLabelRiskAmount(self, riskAmount, riskPoints) :
         if riskAmount < 0 :
-            riskStr = "+" + str(abs(riskAmount))
+            riskStr = "+" + str(abs(riskAmount)) + " | " + "+" + str(riskPoints)
         else :
-           riskStr = str(riskAmount)
+           riskStr = str(riskAmount) + " | " + str(riskPoints)
 
         if riskAmount < 0 :  self.window.label_risk.setStyleSheet(cssMTMGreen) 
         elif riskAmount == 0 : self.window.label_risk.setStyleSheet(cssMTMWhite)
@@ -487,11 +468,11 @@ class TradeWindow(QMainWindow):
         self.window.label_risk.setText(riskStr)
         return
     
-    def updateLabelUnrealisedRewardAmount(self, rewardAmount) :
+    def updateLabelUnrealisedRewardAmount(self, rewardAmount, rewardPoints) :
         if rewardAmount <= 0 :
-            rewardStr = str(rewardAmount)
+            rewardStr = str(rewardAmount) + " | " + "-" + str(rewardPoints)
         else :
-            rewardStr = "+" + str(rewardAmount)
+            rewardStr = "+" + str(rewardAmount)  + " | " + "+" + str(rewardPoints)
 
         if rewardAmount < 0 :  self.window.label_profit.setStyleSheet(cssMTMRed) 
         elif rewardAmount == 0 : self.window.label_profit.setStyleSheet(cssMTMWhite)
@@ -601,8 +582,6 @@ class TradeWindow(QMainWindow):
                 if tick['instrument_token'] == trade.tickerToken :
                     trade.updateLtp(tick['last_price'])
                     
-        self.updateSpotSLMinMax(KiteApi.ins().bnfLtp)
-
         KiteApi.ins().setLTPforRequiredTokens(ticks)
 
         if KiteApi.ins().currentTradePosition is not None :

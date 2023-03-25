@@ -1081,9 +1081,9 @@ QPushButton :hover {
    <widget class="QLabel" name="label_stoploss">
     <property name="geometry">
      <rect>
-      <x>151</x>
+      <x>145</x>
       <y>250</y>
-      <width>51</width>
+      <width>59</width>
       <height>16</height>
      </rect>
     </property>
@@ -1096,7 +1096,10 @@ QPushButton :hover {
      <string notr="true">color:white</string>
     </property>
     <property name="text">
-     <string>Stop loss</string>
+     <string>SL Points</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
     </property>
    </widget>
    <widget class="QPushButton" name="btn_editrisk">
@@ -1123,7 +1126,7 @@ QPushButton :hover {
     </property>
     <property name="icon">
      <iconset>
-      <normaloff>../../icons/btn_edit_risk.png</normaloff>../../icons/btn_edit_risk.png</iconset>
+      <normaloff>C:/Users/Admin/icons/btn_edit_risk.png</normaloff>C:/Users/Admin/icons/btn_edit_risk.png</iconset>
     </property>
     <property name="iconSize">
      <size>
@@ -1180,7 +1183,7 @@ QPushButton :hover {
      </property>
      <property name="icon">
       <iconset>
-       <normaloff>../../icons/icon_arrow_long.png</normaloff>../../icons/icon_arrow_long.png</iconset>
+       <normaloff>C:/Users/Admin/icons/icon_arrow_long.png</normaloff>C:/Users/Admin/icons/icon_arrow_long.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -1440,14 +1443,14 @@ border:1px solid #FFFFFF;</string>
      <property name="font">
       <font>
        <family>Inter</family>
-       <pointsize>12</pointsize>
+       <pointsize>10</pointsize>
       </font>
      </property>
      <property name="styleSheet">
       <string notr="true">color:white</string>
      </property>
      <property name="text">
-      <string>+10,900</string>
+      <string>+10,900 / 30 pt</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -1465,14 +1468,14 @@ border:1px solid #FFFFFF;</string>
      <property name="font">
       <font>
        <family>Inter</family>
-       <pointsize>12</pointsize>
+       <pointsize>10</pointsize>
       </font>
      </property>
      <property name="styleSheet">
       <string notr="true">color:white</string>
      </property>
      <property name="text">
-      <string>10,900</string>
+      <string>10,900 | +20</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -1602,7 +1605,7 @@ border:1px solid #FFFFFF;</string>
       </property>
       <property name="icon">
        <iconset>
-        <normaloff>../../icons/btn_plus.png</normaloff>../../icons/btn_plus.png</iconset>
+        <normaloff>C:/Users/Admin/icons/btn_plus.png</normaloff>C:/Users/Admin/icons/btn_plus.png</iconset>
       </property>
       <property name="iconSize">
        <size>
@@ -1628,7 +1631,7 @@ border:1px solid #FFFFFF;</string>
       </property>
       <property name="icon">
        <iconset>
-        <normaloff>../../icons/btn_minus.png</normaloff>../../icons/btn_minus.png</iconset>
+        <normaloff>C:/Users/Admin/icons/btn_minus.png</normaloff>C:/Users/Admin/icons/btn_minus.png</iconset>
       </property>
       <property name="iconSize">
        <size>
@@ -1654,7 +1657,7 @@ border:1px solid #FFFFFF;</string>
       </property>
       <property name="icon">
        <iconset>
-        <normaloff>../../icons/btn_edit_sl.png</normaloff>../../icons/btn_edit_sl.png</iconset>
+        <normaloff>C:/Users/Admin/icons/btn_edit_sl.png</normaloff>C:/Users/Admin/icons/btn_edit_sl.png</iconset>
       </property>
       <property name="iconSize">
        <size>
