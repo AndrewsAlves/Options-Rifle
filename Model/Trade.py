@@ -72,7 +72,7 @@ class Trade() :
         if self.tradeEntryStatus == EXECUTED :
             if sl < 1 : sl = 0
             self.stoplossPrice = sl
-            self.stoplossPoints = self.entryPrice - sl
+            self.stoplossPoints = round(self.entryPrice - sl)
             self.riskAmount = round(self.qty*self.stoplossPoints,2)
 
     def updateTradeEntryStatus(self, status, executedPrice = 0) :
