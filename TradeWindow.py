@@ -178,8 +178,8 @@ class TradeWindow(QMainWindow):
         self.enableOptionsRifleUi()
         self.updateStatusBar()
 
-        self.riskPerTrade = 2500
-        self.window.et_risk.setText("2500")
+        self.riskPerTrade = 7500
+        self.window.et_risk.setText("7500")
         self.window.et_risk.setEnabled(False)
         self.window.btn_editrisk.setIcon(QIcon('icons/btn_edit_risk.png'))
         self.window.et_risk.setStyleSheet(cssEtEditRiskDisabled)
