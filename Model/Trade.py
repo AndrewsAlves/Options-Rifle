@@ -93,7 +93,7 @@ class Trade() :
     def updateLtp(self, ltp):
         self.ltp = ltp
         self.unRealisedProfit = round((ltp - self.entryPrice) * self.qty,2)
-        self.unRealisedProfitInPoints = round(ltp - self.entryPrice, 1)
+        self.unRealisedProfitInPoints = round(ltp - self.entryPrice)
 
     def incrementSl(self) :
         self.stoplossPrice += 1

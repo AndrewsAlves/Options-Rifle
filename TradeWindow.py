@@ -470,7 +470,7 @@ class TradeWindow(QMainWindow):
     
     def updateLabelUnrealisedRewardAmount(self, rewardAmount, rewardPoints) :
         if rewardAmount <= 0 :
-            rewardStr = str(rewardAmount) + " | " + "-" + str(rewardPoints)
+            rewardStr = str(rewardAmount) + " | " + str(rewardPoints)
         else :
             rewardStr = "+" + str(rewardAmount)  + " | " + "+" + str(rewardPoints)
 
