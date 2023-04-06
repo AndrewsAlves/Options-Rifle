@@ -788,7 +788,7 @@ QPushButton :hover {
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>490</y>
+      <y>470</y>
       <width>291</width>
       <height>16</height>
      </rect>
@@ -1155,9 +1155,9 @@ QPushButton :hover {
     <property name="geometry">
      <rect>
       <x>30</x>
-      <y>511</y>
+      <y>494</y>
       <width>291</width>
-      <height>208</height>
+      <height>228</height>
      </rect>
     </property>
     <property name="frameShape">
@@ -1225,7 +1225,7 @@ QPushButton :hover {
        <x>0</x>
        <y>0</y>
        <width>291</width>
-       <height>208</height>
+       <height>228</height>
       </rect>
      </property>
      <property name="styleSheet">
@@ -1435,9 +1435,9 @@ border:1px solid #FFFFFF;</string>
      <property name="geometry">
       <rect>
        <x>148</x>
-       <y>173</y>
+       <y>202</y>
        <width>131</width>
-       <height>31</height>
+       <height>20</height>
       </rect>
      </property>
      <property name="font">
@@ -1450,7 +1450,7 @@ border:1px solid #FFFFFF;</string>
       <string notr="true">color:white</string>
      </property>
      <property name="text">
-      <string>+10,900 / 30 pt</string>
+      <string>+10,900</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -1460,9 +1460,9 @@ border:1px solid #FFFFFF;</string>
      <property name="geometry">
       <rect>
        <x>9</x>
-       <y>173</y>
+       <y>202</y>
        <width>131</width>
-       <height>31</height>
+       <height>20</height>
       </rect>
      </property>
      <property name="font">
@@ -1475,7 +1475,7 @@ border:1px solid #FFFFFF;</string>
       <string notr="true">color:white</string>
      </property>
      <property name="text">
-      <string>10,900 | +20</string>
+      <string>10,900</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
@@ -1529,10 +1529,10 @@ border:1px solid #FFFFFF;</string>
     <widget class="QFrame" name="frame">
      <property name="geometry">
       <rect>
-       <x>90</x>
+       <x>68</x>
        <y>120</y>
-       <width>113</width>
-       <height>60</height>
+       <width>162</width>
+       <height>32</height>
       </rect>
      </property>
      <property name="frameShape">
@@ -1546,7 +1546,7 @@ border:1px solid #FFFFFF;</string>
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>113</width>
+        <width>162</width>
         <height>32</height>
        </rect>
       </property>
@@ -1561,8 +1561,8 @@ border:1px solid #FFFFFF;</string>
      <widget class="QLineEdit" name="et_stoploss">
       <property name="geometry">
        <rect>
-        <x>26</x>
-        <y>1</y>
+        <x>49</x>
+        <y>2</y>
         <width>61</width>
         <height>27</height>
        </rect>
@@ -1591,7 +1591,7 @@ border:1px solid #FFFFFF;</string>
      <widget class="QPushButton" name="btn_increase_sl">
       <property name="geometry">
        <rect>
-        <x>89</x>
+        <x>111</x>
         <y>2</y>
         <width>21</width>
         <height>29</height>
@@ -1617,8 +1617,8 @@ border:1px solid #FFFFFF;</string>
      <widget class="QPushButton" name="btn_decrease_sl">
       <property name="geometry">
        <rect>
-        <x>4</x>
-        <y>1</y>
+        <x>26</x>
+        <y>2</y>
         <width>21</width>
         <height>30</height>
        </rect>
@@ -1643,10 +1643,36 @@ border:1px solid #FFFFFF;</string>
      <widget class="QPushButton" name="btn_edit_sl">
       <property name="geometry">
        <rect>
-        <x>45</x>
-        <y>36</y>
-        <width>23</width>
-        <height>23</height>
+        <x>136</x>
+        <y>2</y>
+        <width>21</width>
+        <height>30</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background:rgba(0, 0, 0, 0);</string>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="icon">
+       <iconset>
+        <normaloff>C:/Users/Admin/icons/btn_edit_sl.png</normaloff>C:/Users/Admin/icons/btn_edit_sl.png</iconset>
+      </property>
+      <property name="iconSize">
+       <size>
+        <width>20</width>
+        <height>20</height>
+       </size>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="btn_auto_trail_2">
+      <property name="geometry">
+       <rect>
+        <x>4</x>
+        <y>2</y>
+        <width>21</width>
+        <height>30</height>
        </rect>
       </property>
       <property name="styleSheet">
@@ -1671,6 +1697,83 @@ border:1px solid #FFFFFF;</string>
      <zorder>btn_decrease_sl</zorder>
      <zorder>btn_edit_sl</zorder>
      <zorder>et_stoploss</zorder>
+     <zorder>btn_auto_trail_2</zorder>
+    </widget>
+    <widget class="QLabel" name="label_risk_points">
+     <property name="geometry">
+      <rect>
+       <x>9</x>
+       <y>181</y>
+       <width>131</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>Inter</family>
+       <pointsize>10</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color:white</string>
+     </property>
+     <property name="text">
+      <string>-20 | -4</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_profit_2">
+     <property name="geometry">
+      <rect>
+       <x>148</x>
+       <y>181</y>
+       <width>131</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>Inter</family>
+       <pointsize>10</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color:white</string>
+     </property>
+     <property name="text">
+      <string>7 | 12 (60%)</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_auto_trail">
+     <property name="geometry">
+      <rect>
+       <x>63</x>
+       <y>4</y>
+       <width>21</width>
+       <height>29</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">background:rgba(0, 0, 0, 0);</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset>
+       <normaloff>C:/Users/Admin/icons/btn_plus.png</normaloff>C:/Users/Admin/icons/btn_plus.png</iconset>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>18</width>
+       <height>18</height>
+      </size>
+     </property>
     </widget>
     <zorder>border_label</zorder>
     <zorder>icon_trade_type</zorder>
@@ -1688,6 +1791,9 @@ border:1px solid #FFFFFF;</string>
     <zorder>label_label_risk</zorder>
     <zorder>label_label_profit</zorder>
     <zorder>frame</zorder>
+    <zorder>label_risk_points</zorder>
+    <zorder>label_profit_2</zorder>
+    <zorder>btn_auto_trail</zorder>
    </widget>
    <widget class="QLabel" name="label_no_position">
     <property name="geometry">
