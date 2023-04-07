@@ -56,11 +56,15 @@ class Trade() :
        self.ltp = ltp
        self.stoplossPoints = slPoints
        self.stoplossPrice = int(ltp - slPoints)
+       self.initialSLPoints = slPoints
+       self.initialSLPrice = int(ltp - slPoints)
        self.riskAmount = round(self.qty*self.stoplossPoints,2)
-
+       
        self.ltp = ltp
+       self.ltpList = []
 
-
+       self.hitRewardPoints = 0
+       self.hitRewardPct = 0
        self.entryPrice = 0
        self.exitPrice = 0
        self.unRealisedProfit = 0
@@ -92,8 +96,16 @@ class Trade() :
         
     def updateLtp(self, ltp):
         self.ltp = ltp
+        self.ltpList.append(ltp)
+
         self.unRealisedProfit = round((ltp - self.entryPrice) * self.qty,2)
         self.unRealisedProfitInPoints = round(ltp - self.entryPrice)
+        self.hitRewardPoints = round(max(self.ltpList) - self.entryPrice)
+        self.hitRewardPct = round(self.hitRewardPoints / (self.initialSLPoints / 100))
+
+    def getHitRewardPointsStr(self) :
+        strHitPct = "(" + str(self.hitRewardPct) + ")"
+        return self.hitRewardPoints + " " + strHitPct
 
     def incrementSl(self) :
         self.stoplossPrice += 1
@@ -117,6 +129,10 @@ class Trade() :
         entry_price
         exit_time
         exit_price
+        SL
+        Intented_entry_price
+        Intented_exit_price
+        High price, Low price
         pnl
         tag
         notes
