@@ -53,11 +53,16 @@ class Trade() :
        self.strikeStr = str(strike) + " " + ce_or_pe
        self.tickerSymbol = sym
        self.qty = qty
+
        self.ltp = ltp
+       self.intentedEntryPrice = ltp
+       self.intentedExitPrice = 0
+
        self.stoplossPoints = slPoints
        self.stoplossPrice = int(ltp - slPoints)
        self.initialSLPoints = slPoints
        self.initialSLPrice = int(ltp - slPoints)
+
        self.riskAmount = round(self.qty*self.stoplossPoints,2)
        
        self.ltp = ltp
@@ -149,6 +154,11 @@ class Trade() :
         tradeDic['exit_time'] = self.tradeExitTime
         tradeDic['exit_price'] = self.exitPrice
         tradeDic['pnl'] = self.realisedProfit
+        tradeDic['intented_entry_price'] = self.intentedEntryPrice
+        tradeDic['intented_exit_price'] = self.intentedExitPrice
+        tradeDic['stoploss'] = self.initialSLPrice
+        tradeDic['trade_high_price'] = max(self.ltpList)
+        tradeDic['trade_low_price'] = min(self.ltpList)
         tradeDic['tag'] = self.tag
         tradeDic['notes'] = self.notes
         tradeDic['debug'] = KiteApi.DEBUG_MODE

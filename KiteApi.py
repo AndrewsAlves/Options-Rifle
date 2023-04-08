@@ -471,6 +471,8 @@ class KiteApi() :
         status = ORDER_ERROR
 
         trade = self.currentTradePosition
+        trade.intentedExitPrice = self.tokensLtp[trade.tickerToken]
+        
         try:
             trade.tradeExitStatus = INITIATED
             order_id = self.kite.place_order(tradingsymbol=trade.tickerSymbol,

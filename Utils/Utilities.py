@@ -119,6 +119,10 @@ def getPositionsSizing(stoplossPoints, risk_per_trade, lotSize, debug = True) :
     print("Position size:", position_size)
     return position_size
 
+def getMaximumBuyPrice(SLPoints, Ltp) : 
+    maxSlippage = 10 #% 
+    return Ltp + ((SLPoints / 100) * maxSlippage)
+
 def checkInternetConnection():
     url = "http://www.google.com"
     timeout = 5
