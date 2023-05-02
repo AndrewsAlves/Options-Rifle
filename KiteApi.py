@@ -333,7 +333,7 @@ class KiteApi() :
 
         ce_or_pe = KEY_CE if type != KEY_SHORT else KEY_PE
 
-        strike_diff = -1
+        strike_diff = -2
         if DEBUG_MODE :
             strike_diff = 7
 
