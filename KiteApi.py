@@ -41,7 +41,6 @@ ORDER_ERROR = "ordererror"
 ORDER_ERROR_READ_TIMEOUT = "readtimeout"
 ORDER_ERROR_0_POSITION_SIZING = "ordererror_0_position_sizing"
 
-
 NOT_INITIATED = -4
 INITIATED = -5
 NO_RESPONSE = 0

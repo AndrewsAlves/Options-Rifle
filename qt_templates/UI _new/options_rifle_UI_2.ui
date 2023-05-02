@@ -725,7 +725,7 @@ QPushButton :hover {
      <rect>
       <x>150</x>
       <y>130</y>
-      <width>47</width>
+      <width>58</width>
       <height>13</height>
      </rect>
     </property>
@@ -738,7 +738,7 @@ QPushButton :hover {
      <string notr="true">color:#9F9F9F</string>
     </property>
     <property name="text">
-     <string>Futures</string>
+     <string>Call Strike</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_future_diff">
@@ -781,7 +781,7 @@ QPushButton :hover {
      <string notr="true">color:#9F9F9F</string>
     </property>
     <property name="text">
-     <string>Premium DIff.</string>
+     <string>Put Strike</string>
     </property>
    </widget>
    <widget class="Line" name="line_3">
