@@ -98,7 +98,7 @@ def getStrikePrice(ltp, CeOrPe = "CE" , ItmOTmStrikeLevel = 1, optionStrikeInter
     else :
         strike_price = rounded_ltp - strikeSelectionPoint
 
-    print("Strike :", strike_price)
+    #print("Strike :", strike_price)
     return strike_price
 
 def getPositionsSizing(stoplossPoints, risk_per_trade, lotSize, debug = True) :
