@@ -85,6 +85,11 @@ STATUS_REJECTED = "REJECTED"
 BUY = "BUY"
 SELL = "SELL"
 
+DEBUG_MODE = False
+KEY_CE = "CE"
+KEY_PE = "PE"
+
+
 class TradeWindow(QMainWindow):
 
     __instance = None
@@ -359,11 +364,20 @@ class TradeWindow(QMainWindow):
         self.window.label_MTM.setText(rewardStr)
 
     def updatePriceLabels(self) :
-        self.window.label_spot.setText(str(KiteApi.ins().bnfSpotLtp))
-        self.window.label_futures.setText(str(KiteApi.ins().bnfLtp))
 
-        preDiff = round(KiteApi.ins().bnfLtp - KiteApi.ins().bnfSpotLtp, 1)
-        self.window.label_future_diff.setText(str(preDiff))        
+        strike_diff = -2
+        if DEBUG_MODE :
+            strike_diff = 7
+
+        CEStrike = Utilities.getStrikePrice(KiteApi.ins().bnfSpotLtp,KEY_CE, strike_diff)
+        PEStrike = Utilities.getStrikePrice(KiteApi.ins().bnfSpotLtp,KEY_PE, strike_diff)
+
+        self.window.label_call_strike.setText(str(CEStrike))
+        self.window.label_put_strike.setText(str(PEStrike))        
+
+        #preDiff = round(KiteApi.ins().bnfLtp - KiteApi.ins().bnfSpotLtp, 1)
+
+        self.window.label_spot.setText(str(KiteApi.ins().bnfSpotLtp))
 
         if KiteApi.ins().currentTradePosition is not None :
             trade = KiteApi.ins().currentTradePosition
