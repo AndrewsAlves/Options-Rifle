@@ -651,7 +651,7 @@ QPushButton :hover {
      <enum>Qt::Horizontal</enum>
     </property>
    </widget>
-   <widget class="QLabel" name="label_label_futures_2">
+   <widget class="QLabel" name="label_label_spot">
     <property name="geometry">
      <rect>
       <x>30</x>
@@ -1666,13 +1666,13 @@ border:1px solid #FFFFFF;</string>
        </size>
       </property>
      </widget>
-     <widget class="QPushButton" name="btn_auto_trail_2">
+     <widget class="QPushButton" name="btn_auto_trail">
       <property name="geometry">
        <rect>
         <x>4</x>
         <y>2</y>
         <width>21</width>
-        <height>30</height>
+        <height>29</height>
        </rect>
       </property>
       <property name="styleSheet">
@@ -1683,12 +1683,12 @@ border:1px solid #FFFFFF;</string>
       </property>
       <property name="icon">
        <iconset>
-        <normaloff>C:/Users/Admin/icons/btn_edit_sl.png</normaloff>C:/Users/Admin/icons/btn_edit_sl.png</iconset>
+        <normaloff>C:/Users/Admin/icons/btn_plus.png</normaloff>C:/Users/Admin/icons/btn_plus.png</iconset>
       </property>
       <property name="iconSize">
        <size>
-        <width>20</width>
-        <height>20</height>
+        <width>18</width>
+        <height>18</height>
        </size>
       </property>
      </widget>
@@ -1697,7 +1697,7 @@ border:1px solid #FFFFFF;</string>
      <zorder>btn_decrease_sl</zorder>
      <zorder>btn_edit_sl</zorder>
      <zorder>et_stoploss</zorder>
-     <zorder>btn_auto_trail_2</zorder>
+     <zorder>btn_auto_trail</zorder>
     </widget>
     <widget class="QLabel" name="label_risk_points">
      <property name="geometry">
@@ -1724,7 +1724,7 @@ border:1px solid #FFFFFF;</string>
       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QLabel" name="label_profit_2">
+    <widget class="QLabel" name="label_profit_points">
      <property name="geometry">
       <rect>
        <x>148</x>
@@ -1749,32 +1749,6 @@ border:1px solid #FFFFFF;</string>
       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QPushButton" name="btn_auto_trail">
-     <property name="geometry">
-      <rect>
-       <x>63</x>
-       <y>4</y>
-       <width>21</width>
-       <height>29</height>
-      </rect>
-     </property>
-     <property name="styleSheet">
-      <string notr="true">background:rgba(0, 0, 0, 0);</string>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-     <property name="icon">
-      <iconset>
-       <normaloff>C:/Users/Admin/icons/btn_plus.png</normaloff>C:/Users/Admin/icons/btn_plus.png</iconset>
-     </property>
-     <property name="iconSize">
-      <size>
-       <width>18</width>
-       <height>18</height>
-      </size>
-     </property>
-    </widget>
     <zorder>border_label</zorder>
     <zorder>icon_trade_type</zorder>
     <zorder>label_instrument</zorder>
@@ -1792,8 +1766,7 @@ border:1px solid #FFFFFF;</string>
     <zorder>label_label_profit</zorder>
     <zorder>frame</zorder>
     <zorder>label_risk_points</zorder>
-    <zorder>label_profit_2</zorder>
-    <zorder>btn_auto_trail</zorder>
+    <zorder>label_profit_points</zorder>
    </widget>
    <widget class="QLabel" name="label_no_position">
     <property name="geometry">
@@ -2048,7 +2021,7 @@ QPushButton :hover {
    <zorder>label_MTM</zorder>
    <zorder>btn_execute</zorder>
    <zorder>line_2</zorder>
-   <zorder>label_label_futures_2</zorder>
+   <zorder>label_label_spot</zorder>
    <zorder>label_spot</zorder>
    <zorder>label_call_strike</zorder>
    <zorder>label_label_call_strike</zorder>

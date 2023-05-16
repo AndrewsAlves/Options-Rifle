@@ -7,6 +7,7 @@ import sys
 import logging
 from KiteApi import KiteApi
 from Utils.Utilities import WorkerThread,WorkerLoopedThread,TickLooperThread
+import Utils.StaticVariables as statics
 import time
 import threading 
 from Utils import Utilities
@@ -366,7 +367,7 @@ class TradeWindow(QMainWindow):
     def updatePriceLabels(self) :
 
         strike_diff = -2
-        if DEBUG_MODE :
+        if statics.DEBUG_MODE :
             strike_diff = 7
 
         CEStrike = Utilities.getStrikePrice(KiteApi.ins().bnfSpotLtp,KEY_CE, strike_diff)

@@ -1,5 +1,7 @@
 import datetime
 import KiteApi
+import Utils.StaticVariables as statics
+
 
 EXECUTED = 1
 PENDING = -1
@@ -109,8 +111,8 @@ class Trade() :
         self.hitRewardPct = round(self.hitRewardPoints / (self.initialSLPoints / 100))
 
     def getHitRewardPointsStr(self) :
-        strHitPct = "(" + str(self.hitRewardPct) + ")"
-        return self.hitRewardPoints + " " + strHitPct
+        strHitPct = "(" + str(self.hitRewardPct) + "%" ")"
+        return str(self.hitRewardPoints) + " " + strHitPct
 
     def incrementSl(self) :
         self.stoplossPrice += 1
@@ -161,7 +163,7 @@ class Trade() :
         tradeDic['trade_low_price'] = min(self.ltpList)
         tradeDic['tag'] = self.tag
         tradeDic['notes'] = self.notes
-        tradeDic['debug'] = KiteApi.DEBUG_MODE
+        tradeDic['debug'] = statics.DEBUG_MODE
 
         return tradeDic
 

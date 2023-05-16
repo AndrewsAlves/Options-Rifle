@@ -7,6 +7,7 @@ import os
 from kiteconnect.ticker import KiteTicker
 import mibian
 import Utils.Utilities
+import Utils.StaticVariables as statics
 import threading
 import time 
 from Model.Trade import Trade
@@ -334,7 +335,7 @@ class KiteApi() :
         ce_or_pe = KEY_CE if type != KEY_SHORT else KEY_PE
 
         strike_diff = -1
-        if DEBUG_MODE :
+        if statics.DEBUG_MODE :
             strike_diff = 7
 
         strike = Utils.Utilities.getStrikePrice(self.bnfSpotLtp,ce_or_pe, strike_diff)
@@ -397,7 +398,7 @@ class KiteApi() :
 
         delta = float(c.callDelta) if type != KEY_SHORT else float(c.putDelta)
         slPoints = abs(int(round(SLSpotPoints * delta)))
-        qty = Utils.Utilities.getPositionsSizing(slPoints, maxRiskPerTrade,lotSize, debug = DEBUG_MODE)
+        qty = Utils.Utilities.getPositionsSizing(slPoints, maxRiskPerTrade,lotSize, debug = statics.DEBUG_MODE)
 
 
         if qty == 0 :
