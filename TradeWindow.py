@@ -151,7 +151,7 @@ class TradeWindow(QMainWindow):
         self.window.btn_editrisk.clicked.connect(self.clickedEditRisk)
         self.window.btn_execute.clicked.connect(self.clickedExecute)
 
-        self.window.spin_stoploss.setMinimum(10)
+        self.window.spin_stoploss.setMinimum(5)
 
         ## SET BUTTONGS AND ITS FUNCTIONS FOR TRADE FRAME 
         self.window.btn_decrease_sl.clicked.connect(self.clickeddedcreaseSL)
@@ -187,8 +187,8 @@ class TradeWindow(QMainWindow):
         self.enableOptionsRifleUi()
         self.updateStatusBar()
 
-        self.riskPerTrade = 2500
-        self.window.et_risk.setText("2500")
+        self.riskPerTrade = 5000
+        self.window.et_risk.setText("5000")
         self.window.et_risk.setEnabled(False)
         self.window.btn_editrisk.setIcon(QIcon('icons/btn_edit_risk.png'))
         self.window.et_risk.setStyleSheet(cssEtEditRiskDisabled)
@@ -501,7 +501,7 @@ class TradeWindow(QMainWindow):
     def updateLabelUnrealisedRewardAmount(self, rewardAmount, rewardPoints, hitRewardPointsStr) :
         if rewardAmount <= 0 :
             rewardPointStr =  str(rewardPoints) + " | "  + hitRewardPointsStr
-            rewardStr = str(rewardAmount)
+            rewardStr = str(rewardAmount) + " | " + str(rewardPoints)
         else :
             rewardPointStr = "+" + str(rewardPoints) + " | " + hitRewardPointsStr
             rewardStr = "+" + str(rewardAmount)  + " | " + "+" + str(rewardPoints)
@@ -510,7 +510,7 @@ class TradeWindow(QMainWindow):
         elif rewardAmount == 0 : self.window.label_profit.setStyleSheet(cssMTMWhite)
         else : self.window.label_profit.setStyleSheet(cssMTMGreen)
         
-        self.window.label_profit_points.setText(rewardPointStr)
+        self.window.label_profit_points.setText(hitRewardPointsStr)
         self.window.label_profit.setText(rewardStr)
         return
     

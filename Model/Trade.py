@@ -78,6 +78,8 @@ class Trade() :
        self.unRealisedProfitInPoints = 0
        self.tag = ""
        self.notes = ""
+
+       print("SL price" + str(self.stoplossPrice))
        
     def setStoploss(self, sl) :
         if self.tradeEntryStatus == EXECUTED :
@@ -113,6 +115,7 @@ class Trade() :
     def getHitRewardPointsStr(self) :
         strHitPct = "(" + str(self.hitRewardPct) + "%" ")"
         return str(self.hitRewardPoints) + " " + strHitPct
+        
 
     def incrementSl(self) :
         self.stoplossPrice += 1
