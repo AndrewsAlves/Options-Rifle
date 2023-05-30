@@ -405,6 +405,9 @@ class TradeWindow(QMainWindow):
                 self.updateLabelUnrealisedRewardAmount(trade.unRealisedProfit, 
                                                        trade.unRealisedProfitInPoints, 
                                                        trade.getHitRewardPointsStr())
+                self.updateLabelRiskAmount(KiteApi.ins().currentTradePosition.riskAmount, 
+                                   KiteApi.ins().currentTradePosition.stoplossPoints, 
+                                   KiteApi.ins().currentTradePosition.initialSLPoints)
 
     
     """
@@ -511,7 +514,6 @@ class TradeWindow(QMainWindow):
             self.window.et_stoploss.setFocus()
             self.window.btn_edit_sl.setIcon(QIcon('icons/btn_set_sl.png'))
             self.window.et_stoploss.setStyleSheet(cssEtEditSlEnabled)
-
 
         return    
     

@@ -122,14 +122,19 @@ class Trade() :
         self.hitRewardPct = round(self.hitRewardPoints / (self.initialSLPoints / 100))
 
         if (self.autoTrail) : 
-            if self.hitRewardPct > 30 and self.hitRewardPct < 69: 
+            if self.hitRewardPct > 29 and self.hitRewardPct < 70: 
                 self.setStoploss(self.initialSLPrice + self.hitRewardPoints)
+                print("Auto trailed SL to " + str(self.initialSLPrice + self.hitRewardPoints))
             elif self.hitRewardPct > 69 and self.hitRewardPct < 80:
                 self.setStoploss(self.entryPrice + ((self.initialSLPoints / 100) * 20))
+                print("Auto trailed SL to " + str(((self.initialSLPoints / 100) * 20)))
             elif self.hitRewardPct > 79 and self.hitRewardPct < 90:
                 self.setStoploss(self.entryPrice + ((self.initialSLPoints / 100) * 50))
+                print("Auto trailed SL to " + str(((self.initialSLPoints / 100) * 50)))
             elif self.hitRewardPct > 89 :
                 self.setStoploss(self.entryPrice + ((self.initialSLPoints / 100) * 70))
+                print("Auto trailed SL to " + str(((self.initialSLPoints / 100) * 70)))
+
 
 
     def getHitRewardPointsStr(self) :
