@@ -50,6 +50,8 @@ cssEtEditSlEnabled = """QLineEdit {
         border-radius:5px
     }"""
 
+cssBtnAutoTrail = "color: #000000;""background-color: rgba(255, 255, 255, 0);"
+
 cssMTMRed = "color: #F53535;"
 cssMTMGreen = "color: #4BF941;"
 cssMTMWhite = "color: #C5C5C5;"
@@ -149,6 +151,8 @@ class TradeWindow(QMainWindow):
         self.window.btn_short.clicked.connect(self.clickedShort)
         self.window.btn_editrisk.clicked.connect(self.clickedEditRisk)
         self.window.btn_execute.clicked.connect(self.clickedExecute)
+        self.window.btn_auto_t.clicked.connect(self.clickedAutoTrail)
+        self.window.btn_auto_t.setStyleSheet(cssBtnAutoTrail)
 
         self.window.spin_stoploss.setMinimum(5)
 
@@ -159,7 +163,6 @@ class TradeWindow(QMainWindow):
         self.window.btn_increase_sl.setIcon(QIcon('icons/btn_plus.png'))
         self.window.btn_decrease_sl.setIcon(QIcon('icons/btn_minus.png'))
         self.window.btn_edit_sl.setIcon(QIcon('icons/btn_edit_sl.png'))
-        self.window.btn_auto_trail.setIcon(QIcon('icons/btn_auto_trail_off.png'))
 
 
         self.window.btn_exit.clicked.connect(self.clickedExitTrade)
@@ -176,8 +179,10 @@ class TradeWindow(QMainWindow):
         #self.window.et_stoploss.setValidator(self.slValidator)
 
         #inititalise Startup Parameters
+        self.autoTrailing = False
         self.clickedBounce()
         self.clickedLong()
+        self.clickedAutoTrail()
         self.window.spinner_ticker.addItem("BANKNIFTY")
         self.updateLabelMtMAmount(round(KiteApi.ins().finalPnL, 2))
 
@@ -291,6 +296,18 @@ class TradeWindow(QMainWindow):
         self.executionThread.start()
         return     
     
+    def clickedAutoTrail(self) : 
+
+        if KiteApi.ins().currentTradePosition != None : return
+    
+        if self.autoTrailing : 
+            self.autoTrailing = False 
+            self.window.btn_auto_t.setIcon(QIcon('icons/btn_auto_trail_off.png'))
+        else :
+            self.autoTrailing = True
+            self.window.btn_auto_t.setIcon(QIcon('icons/btn_auto_trail_on.png'))
+
+    
     def executionThreadFunc(self) :
         slPrice = self.window.spin_stoploss.value()
         self.executeButtonUIupdate(1)
@@ -401,6 +418,9 @@ class TradeWindow(QMainWindow):
     def entryOrderExecuted(self) :
 
         trade = KiteApi.ins().currentTradePosition
+
+        trade.setAutoTrailing(self.autoTrailing)
+
         if trade.tradeType == LONG :
             self.window.icon_trade_type.setIcon(QIcon('icons/icon_arrow_long.png'))    
         else :
@@ -412,6 +432,11 @@ class TradeWindow(QMainWindow):
             self.window.label_strategy.setText('DT')
         else:
             self.window.label_strategy.setText('BT')
+
+        if self.autoTrailing : 
+            self.window.btn_auto_trail.setIcon(QIcon('icons/btn_auto_trail_on.png'))
+        else :   
+            self.window.btn_auto_trail.setIcon(QIcon('icons/btn_auto_trail_off.png'))
 
         self.window.label_instrument.setText(trade.strikeStr)
         self.window.label_trade_qty.setText(str(trade.qty))
@@ -441,6 +466,9 @@ class TradeWindow(QMainWindow):
 
 
     def clickedIncreaseSL(self) :
+
+        if self.autoTrailing: return
+
         KiteApi.ins().currentTradePosition.incrementSl()
         self.window.et_stoploss.setText(str(KiteApi.ins().currentTradePosition.stoplossPrice))
         self.updateLabelRiskAmount(KiteApi.ins().currentTradePosition.riskAmount, 
@@ -449,6 +477,9 @@ class TradeWindow(QMainWindow):
         return
     
     def clickeddedcreaseSL(self) :
+
+        if self.autoTrailing: return
+
         if KiteApi.ins().currentTradePosition.stoplossPrice < 1 :
             return
 
@@ -461,6 +492,8 @@ class TradeWindow(QMainWindow):
         return
     
     def clickedEditSL(self) :
+
+        if self.autoTrailing: return
 
         if self.window.et_stoploss.isEnabled() : 
              ## set Risk

@@ -60,11 +60,11 @@ class Trade() :
        self.intentedEntryPrice = ltp
        self.intentedExitPrice = 0
 
+       self.autoTrail = False
        self.stoplossPoints = slPoints
        self.stoplossPrice = round(ltp - slPoints, 2)
        self.initialSLPoints = slPoints
        self.initialSLPrice = round(ltp - slPoints, 2)
-
        self.riskAmount = round(self.qty*self.stoplossPoints,2)
        
        self.ltp = ltp
@@ -81,6 +81,9 @@ class Trade() :
 
        print("SL price" + str(self.stoplossPrice))
        
+    def setAutoTrailing(self, autoTrail) : 
+        self.autoTrail = autoTrail
+
     def setStoploss(self, slPrice) :
         if self.tradeEntryStatus == EXECUTED :
             if slPrice < 1 : slPrice = 0
@@ -96,7 +99,9 @@ class Trade() :
         if (status == EXECUTED) :
             self.tradeEntryTime = datetime.datetime.now()
             self.entryPrice = round(executedPrice, 2)
-            self.updateStoploss(round(self.entryPrice - self.initialSLPoints, 2))
+            slPrice = round(self.entryPrice - self.initialSLPoints, 2)
+            self.initialSLPrice = slPrice
+            self.updateStoploss(slPrice)
 
     def updateTradeExitStatus(self, status, executedPrice = 0) :
         if (status == EXECUTED) :
@@ -106,15 +111,26 @@ class Trade() :
             self.realisedProfitInPoints = executedPrice-self.entryPrice
         self.tradeExitStatus = status
         
-        
+
     def updateLtp(self, ltp):
         self.ltp = ltp
         self.ltpList.append(ltp)
 
         self.unRealisedProfit = round((ltp - self.entryPrice) * self.qty,2)
         self.unRealisedProfitInPoints = round(ltp - self.entryPrice)
-        self.hitRewardPoints = round(max(self.ltpList) - self.entryPrice)
+        self.hitRewardPoints = round(max(self.ltpList) - self.entryPrice,2)
         self.hitRewardPct = round(self.hitRewardPoints / (self.initialSLPoints / 100))
+
+        if (self.autoTrail) : 
+            if self.hitRewardPct > 30 and self.hitRewardPct < 69: 
+                self.setStoploss(self.initialSLPrice + self.hitRewardPoints)
+            elif self.hitRewardPct > 69 and self.hitRewardPct < 80:
+                self.setStoploss(self.entryPrice + ((self.initialSLPoints / 100) * 20))
+            elif self.hitRewardPct > 79 and self.hitRewardPct < 90:
+                self.setStoploss(self.entryPrice + ((self.initialSLPoints / 100) * 50))
+            elif self.hitRewardPct > 89 :
+                self.setStoploss(self.entryPrice + ((self.initialSLPoints / 100) * 70))
+
 
     def getHitRewardPointsStr(self) :
         strHitPct = "(" + str(self.hitRewardPct) + "%" ")"

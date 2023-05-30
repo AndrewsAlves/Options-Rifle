@@ -24,9 +24,9 @@ class Ui_main(object):
     def setupUi(self, main):
         if not main.objectName():
             main.setObjectName(u"main")
-        main.resize(357, 900)
+        main.resize(357, 942)
         main.setMinimumSize(QSize(357, 900))
-        main.setMaximumSize(QSize(357, 900))
+        main.setMaximumSize(QSize(357, 942))
         font = QFont()
         font.setFamilies([u"Graphie"])
         main.setFont(font)
@@ -530,6 +530,22 @@ class Ui_main(object):
 "}")
         self.btn_exit.setAutoDefault(False)
         self.btn_exit.setFlat(False)
+        self.line_4 = QFrame(self.MainWinodw2)
+        self.line_4.setObjectName(u"line_4")
+        self.line_4.setGeometry(QRect(29, 867, 291, 16))
+        self.line_4.setFrameShape(QFrame.HLine)
+        self.line_4.setFrameShadow(QFrame.Sunken)
+        self.btn_auto_t = QPushButton(self.MainWinodw2)
+        self.btn_auto_t.setObjectName(u"btn_auto_t")
+        self.btn_auto_t.setGeometry(QRect(164, 887, 31, 31))
+        self.btn_auto_t.setFont(font3)
+        self.btn_auto_t.setStyleSheet(u"color: #000000;\n"
+"background-color: rgba(255, 255, 255, 0);\n"
+"")
+        icon5 = QIcon()
+        icon5.addFile(u"../icons/btn_auto_trail_on.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.btn_auto_t.setIcon(icon5)
+        self.btn_auto_t.setIconSize(QSize(28, 28))
         main.setCentralWidget(self.MainWinodw2)
         self.btn_exit.raise_()
         self.btn_long.raise_()
@@ -558,6 +574,8 @@ class Ui_main(object):
         self.btn_trans_label_Fut.raise_()
         self.frame_trade.raise_()
         self.label_no_position.raise_()
+        self.line_4.raise_()
+        self.btn_auto_t.raise_()
         self.statusbar = QStatusBar(main)
         self.statusbar.setObjectName(u"statusbar")
         self.statusbar.setStyleSheet(u"color:#F3EF52;")
@@ -620,5 +638,6 @@ class Ui_main(object):
         self.label_profit_points.setText(QCoreApplication.translate("main", u"7 | 12 (60%)", None))
         self.label_no_position.setText(QCoreApplication.translate("main", u"You dont have any position", None))
         self.btn_exit.setText(QCoreApplication.translate("main", u"Exit", None))
+        self.btn_auto_t.setText("")
     # retranslateUi
 
