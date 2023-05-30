@@ -98,7 +98,6 @@ class TradeWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        
 
         self.onTickRaceLock = threading.Lock()
         self.tickLooperraceLock = threading.Lock()
@@ -418,6 +417,7 @@ class TradeWindow(QMainWindow):
         self.window.label_trade_qty.setText(str(trade.qty))
         self.window.label_avg_price.setText(str(trade.entryPrice))
         self.window.label_trade_ltp.setText(str(trade.ltp))
+
 
         self.window.et_stoploss.setText(str(trade.stoplossPrice))
         self.window.et_stoploss.setEnabled(False)

@@ -397,7 +397,7 @@ class KiteApi() :
         slSpecial = slNormal + ((c.vega / 100) * 25)"""
 
         delta = float(c.callDelta) if type != KEY_SHORT else float(c.putDelta)
-        slPoints = abs(int(round(SLSpotPoints * delta)))
+        slPoints = abs(round(SLSpotPoints * delta, 2))
         qty = Utils.Utilities.getPositionsSizing(slPoints, maxRiskPerTrade,lotSize, debug = statics.DEBUG_MODE)
 
 

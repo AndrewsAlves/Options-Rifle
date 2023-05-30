@@ -61,9 +61,9 @@ class Trade() :
        self.intentedExitPrice = 0
 
        self.stoplossPoints = slPoints
-       self.stoplossPrice = int(ltp - slPoints)
+       self.stoplossPrice = round(ltp - slPoints, 2)
        self.initialSLPoints = slPoints
-       self.initialSLPrice = int(ltp - slPoints)
+       self.initialSLPrice = round(ltp - slPoints, 2)
 
        self.riskAmount = round(self.qty*self.stoplossPoints,2)
        
@@ -81,18 +81,22 @@ class Trade() :
 
        print("SL price" + str(self.stoplossPrice))
        
-    def setStoploss(self, sl) :
+    def setStoploss(self, slPrice) :
         if self.tradeEntryStatus == EXECUTED :
-            if sl < 1 : sl = 0
-            self.stoplossPrice = sl
-            self.stoplossPoints = round(self.entryPrice - sl)
+            if slPrice < 1 : slPrice = 0
+            self.stoplossPrice = slPrice
+            self.stoplossPoints = round(self.entryPrice - slPrice, 2)
             self.riskAmount = round(self.qty*self.stoplossPoints,2)
+
+    def updateStoploss(self, slPrice) : 
+        self.setStoploss(slPrice)
 
     def updateTradeEntryStatus(self, status, executedPrice = 0) :
         self.tradeEntryStatus = status
         if (status == EXECUTED) :
             self.tradeEntryTime = datetime.datetime.now()
             self.entryPrice = round(executedPrice, 2)
+            self.updateStoploss(round(self.entryPrice - self.initialSLPoints, 2))
 
     def updateTradeExitStatus(self, status, executedPrice = 0) :
         if (status == EXECUTED) :
