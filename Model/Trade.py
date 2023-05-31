@@ -117,7 +117,7 @@ class Trade() :
         self.ltpList.append(ltp)
 
         self.unRealisedProfit = round((ltp - self.entryPrice) * self.qty,2)
-        self.unRealisedProfitInPoints = round(ltp - self.entryPrice)
+        self.unRealisedProfitInPoints = round(ltp - self.entryPrice, 2)
         self.hitRewardPoints = round(max(self.ltpList) - self.entryPrice,2)
         self.hitRewardPct = round(self.hitRewardPoints / (self.initialSLPoints / 100))
 

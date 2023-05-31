@@ -1,6 +1,6 @@
 
 
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 API_KEY= "yzczdzxsmw9w9tq9"
 API_SECRET = "2k7oo9x1w0xl5g9789wl8j6v4u03lq0x"
