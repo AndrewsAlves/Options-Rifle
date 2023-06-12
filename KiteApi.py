@@ -539,6 +539,83 @@ class KiteApi() :
         tradeFilePath = "G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\trades_logs\\"+filename
         tradesDf.to_csv(tradeFilePath, index = False)
 
+
+    def getDeltaValues(self) :
+
+        start_time = time.time()
+
+        strike_diff = -1
+        if statics.DEBUG_MODE :
+            strike_diff = 7
+
+        ceStrike = Utils.Utilities.getStrikePrice(self.bnfSpotLtp,KEY_CE, strike_diff)
+        peStrike = Utils.Utilities.getStrikePrice(self.bnfSpotLtp,KEY_PE, strike_diff)
+
+        try :
+            ceDf = self.getSelectedStrikeOption(KEY_BANKNIFTY_FUT, KEY_CE, self.upcomingOptionsExpiry, ceStrike)
+            if ceDf is None :
+                logging.info("ERROR : Retrived dataframe empty CE : {}".format(e.message))
+                return ORDER_ERROR
+            peDf = self.getSelectedStrikeOption(KEY_BANKNIFTY_FUT, KEY_PE, self.upcomingOptionsExpiry, peStrike)
+            if peDf is None :
+                logging.info("ERROR : Retrived dataframe empty PE: {}".format(e.message))
+                return ORDER_ERROR
+        
+        except Exception as e:
+           end_time = time.time()
+           time_taken = end_time - start_time
+           print(f"Time taken to retrive delta: {time_taken} seconds")
+           print("ERROR : Retrive Selected option From datafrom")
+           return ORDER_ERROR
+            
+        tickerTokenCe = ceDf['instrument_token']
+        ltpCe = self.tokensLtp[tickerTokenCe]
+        tickerTokenPe = peDf['instrument_token']
+        ltpPe = self.tokensLtp[tickerTokenPe]
+        expiry = ceDf['expiry']
+
+
+        time_obj = dt.datetime.strptime(MARKET_CLOSE_TIME, '%H:%M:%S').time()
+        timeToExpiration = dt.datetime.combine(expiry, time_obj)
+        timetoExpirationInHours = Utils.Utilities.getTimetoExpirationInHoursFromDays(timeToExpiration)
+
+
+        ceGreeks = mibian.BS([self.bnfSpotLtp,
+                    ceStrike, 
+                    RISK_FREE_INTEREST_RATE, 
+                    timetoExpirationInHours], 
+                    callPrice = ltpCe)
+        ceIv = ceGreeks.impliedVolatility
+        
+        peGreeks = mibian.BS([self.bnfSpotLtp,
+                    peStrike, 
+                    RISK_FREE_INTEREST_RATE, 
+                    timetoExpirationInHours], 
+                    putPrice = ltpPe)
+        peIv = peGreeks.impliedVolatility
+
+        
+        ceGreeks = mibian.BS([self.bnfSpotLtp, 
+                        ceStrike, 
+                        RISK_FREE_INTEREST_RATE, 
+                        timetoExpirationInHours], 
+                        volatility = ceIv)
+        
+        peGreeks = mibian.BS([self.bnfSpotLtp, 
+                        peStrike, 
+                        RISK_FREE_INTEREST_RATE, 
+                        timetoExpirationInHours], 
+                        volatility = peIv)
+        
+        """ SL based on future IV drop 
+        ivDropbuffer = (c.vega / 100) * 25
+        slSpecial = slNormal + ((c.vega / 100) * 25)"""
+
+        ceDelta = float(ceGreeks.callDelta)
+        peDelta = float(peGreeks.putDelta)
+
+        return ceDelta, peDelta
+
     
 
 

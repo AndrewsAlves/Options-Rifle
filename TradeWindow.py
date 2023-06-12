@@ -793,6 +793,14 @@ class TradeWindow(QMainWindow):
     def process_events(self):
         QApplication.processEvents()
         KiteApi.ins().sendEmptyOrderTokeepTheServerAlive()
+
+        try :
+            ceDelta, peDelta = KiteApi.ins().getDeltaValues()
+            print("Ce delta " + str(ceDelta))
+            print("Pe delta " + str(abs(peDelta)))
+        except :
+            print("error calculation delta")
+
         print("Processed QT events at", QDateTime.currentDateTime().toString())
 
 
