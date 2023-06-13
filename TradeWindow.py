@@ -150,7 +150,7 @@ class TradeWindow(QMainWindow):
         self.window.btn_long.clicked.connect(self.clickedLong)
         self.window.btn_short.clicked.connect(self.clickedShort)
         self.window.btn_editrisk.clicked.connect(self.clickedEditRisk)
-        self.window.btn_execute.clicked.connect(self.clickedExecute)
+        self.window.btn_execute.clicked.connect(self.clickedCalculate)
         self.window.btn_auto_t.clicked.connect(self.clickedAutoTrail)
         self.window.btn_auto_t.setStyleSheet(cssBtnAutoTrail)
 
@@ -264,8 +264,13 @@ class TradeWindow(QMainWindow):
         self.window.btn_short.setStyleSheet(cssBtnShortDisabled)
         self.window.btn_long.setIcon(QIcon('icons/btn_long_enabled.png'))
         self.window.btn_short.setIcon(QIcon('icons/btn_short_disabled.png'))
+        self.window.label_label_call_strike.setText("Put Strike")
+        self.window.label_label_call_delta.setText("Put Delta")
+        self.window.label_label_call_h_strike.setText("Put-H Strike")
+        self.window.label_label_call_h_delta.setText("Put-H Delta")
 
-        return          
+        return
+    
     def clickedShort(self):
 
         self.tradeType = SHORT
@@ -273,8 +278,12 @@ class TradeWindow(QMainWindow):
         self.window.btn_short.setStyleSheet(cssBtnShortEnabled)
         self.window.btn_long.setIcon(QIcon('icons/btn_long_disabled.png'))
         self.window.btn_short.setIcon(QIcon('icons/btn_short_enabled.png'))
+        self.window.label_label_call_strike.setText("Call Strike")
+        self.window.label_label_call_delta.setText("Call Delta")
+        self.window.label_label_call_h_strike.setText("Call-H Strike")
+        self.window.label_label_call_h_delta.setText("Call-H Delta")
+
         return 
-    
     
     def clickedEditRisk(self):
         if self.window.et_risk.isEnabled() : 
@@ -296,6 +305,15 @@ class TradeWindow(QMainWindow):
         self.executionThread.start()
         return     
     
+    def clickedCalculate(self) : 
+        strikeDelta = int(self.window.spin_strike_delta.text()) / 100
+        strikeHedgeDelta = int(self.window.spin_hedge_strike_delta.text()) / 100
+        finalDelta = strikeDelta - strikeHedgeDelta
+        stoploss_strike = round(int(self.window.spin_stoploss.text()) * strikeDelta,2)
+        stoploss_legs = int(self.window.spin_stoploss.text()) * finalDelta
+        postionSize = Utilities.getPositionsSizing(stoploss_legs, self.riskPerTrade, 25, statics.DEBUG_MODE)
+        self.window.label_position_size.setText("SL: " + str(stoploss_strike) + " " + "PS: " + str(postionSize))
+
     def clickedAutoTrail(self) : 
 
         if KiteApi.ins().currentTradePosition != None : return
@@ -386,15 +404,10 @@ class TradeWindow(QMainWindow):
         if statics.DEBUG_MODE :
             strike_diff = 7
 
-        CEStrike = Utilities.getStrikePrice(KiteApi.ins().bnfSpotLtp,KEY_CE, strike_diff)
-        PEStrike = Utilities.getStrikePrice(KiteApi.ins().bnfSpotLtp,KEY_PE, strike_diff)
-
-        self.window.label_call_strike.setText(str(CEStrike))
-        self.window.label_put_strike.setText(str(PEStrike))        
-
         #preDiff = round(KiteApi.ins().bnfLtp - KiteApi.ins().bnfSpotLtp, 1)
 
         self.window.label_spot.setText(str(KiteApi.ins().bnfSpotLtp))
+        self.window.label_futures.setText(str(KiteApi.ins().bnfLtp))
 
         if KiteApi.ins().currentTradePosition is not None :
             trade = KiteApi.ins().currentTradePosition
