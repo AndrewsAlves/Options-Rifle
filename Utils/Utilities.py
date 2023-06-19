@@ -3,6 +3,7 @@ import datetime as dt
 import time
 import math
 import requests
+import Utils.StaticVariables as statics
 
 class WorkerThread(QThread):
     finished = Signal(str)
@@ -122,6 +123,18 @@ def getPositionsSizing(stoplossPoints, risk_per_trade, lotSize, debug = True) :
 def getMaximumBuyPrice(SLPoints, Ltp) : 
     maxSlippage = 10 #% 
     return Ltp + ((SLPoints / 100) * maxSlippage)
+
+def getOTMStrikeList(tradeType, spotLtp, OTMStrikeLenth = 20) : 
+    strikeList = []
+    if tradeType == statics.LONG : 
+        for i in range(OTMStrikeLenth) : 
+            strikeList.append(getStrikePrice(spotLtp, statics.KEY_PE, ItmOTmStrikeLevel = i, debug=statics.DEBUG_MODE))
+    if tradeType == statics.SHORT : 
+        for i in range(OTMStrikeLenth) : 
+            strikeList.append(getStrikePrice(spotLtp, statics.KEY_CE,  ItmOTmStrikeLevel = i, debug=statics.DEBUG_MODE))
+    str_list = list(map(str, strikeList))
+    return str_list
+    print(strikeList)
 
 def checkInternetConnection():
     url = "http://www.google.com"

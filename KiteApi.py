@@ -73,6 +73,7 @@ class KiteApi() :
         self.tokensLtp = {}
         self.optionsDf = None
         self.optionChain = None
+        self.strikeList = []
 
         self.optionsRaceLock = threading.Lock()
         self.executionRaceLock = threading.Lock()
@@ -326,7 +327,7 @@ class KiteApi() :
 
         return
     
-    def executeTrade(self, type, SLSpotPoints, maxRiskPerTrade, stg) : 
+    def executeTrade(self,strike, strikeHedge,strikeDelta, strikeHedgeDelta, SLpoints, type, SLSpotPoints, maxRiskPerTrade, stg) : 
 
         status = ORDER_ERROR
         start_time = time.time()
@@ -338,12 +339,14 @@ class KiteApi() :
         if statics.DEBUG_MODE :
             strike_diff = 7
 
-        strike = Utils.Utilities.getStrikePrice(self.bnfSpotLtp,ce_or_pe, strike_diff)
-
         try :
-            df = self.getSelectedStrikeOption(KEY_BANKNIFTY_FUT, ce_or_pe, self.upcomingOptionsExpiry, strike)
-            if df is None :
-                self.logging.info("ERROR : Retrived dataframe empty : {}".format(e.message))
+            strikedf = self.getSelectedStrikeOption(KEY_BANKNIFTY_FUT, ce_or_pe, self.upcomingOptionsExpiry, strike)
+            if strikedf is None :
+                self.logging.info("ERROR : Retrived strike dataframe empty : {}".format(e.message))
+                return ORDER_ERROR
+            strikeHedgeDf = self.getSelectedStrikeOption(KEY_BANKNIFTY_FUT, ce_or_pe, self.upcomingOptionsExpiry, strikeHedge)
+            if strikeHedgeDf is None :
+                self.logging.info("ERROR : Retrived strike hedge dataframe empty : {}".format(e.message))
                 return ORDER_ERROR
             
         except Exception as e:
@@ -354,54 +357,30 @@ class KiteApi() :
            print("ERROR : Retrive Selected option From datafrom")
            return ORDER_ERROR
         
-        print(df)
+        print(strikedf)
+        print(strikeHedgeDf)
         
-        tickerToken = df['instrument_token']
-        tradingSymbol = df['tradingsymbol']
-        instrumentType = df['instrument_type']
-        expiry = df['expiry']
-        lotSize = df['lot_size']
-        ltp = self.tokensLtp[tickerToken]
+        tickerTokenStrike = strikedf['instrument_token']
+        tradingSymbolStrike= strikedf['tradingsymbol']
+        tickerTokenStrikeHedge = strikeHedgeDf['instrument_token']
+        tradingSymbolStrikeHedge = strikeHedgeDf['tradingsymbol']
+
+        instrumentType = strikedf['instrument_type']
+        expiry = strikedf['expiry']
+        lotSize = strikedf['lot_size']
+
+        ltpStrike = self.tokensLtp[tickerTokenStrike]
+        ltpStrikehedge = self.tokensLtp[tickerTokenStrikeHedge]
+
+        finalDelta = strikeDelta - strikeHedgeDelta
+        stoploss_strike = SLpoints * strikeDelta,2
+        stoploss_legs = SLpoints * finalDelta
+        postionSize = self.positionSizeAdjustedToMargin()
+        #postionSize = Utilities.getPositionsSizing(stoploss_legs, self.riskPerTrade, 25, statics.DEBUG_MODE)
 
         #slSpotPoints = int(self.bnfLtp - SLSpot) if type != KEY_SHORT else int(SLSpot - self.bnfLtp)
 
-        time_obj = dt.datetime.strptime(MARKET_CLOSE_TIME, '%H:%M:%S').time()
-        timeToExpiration = dt.datetime.combine(expiry, time_obj)
-        timetoExpirationInHours = Utils.Utilities.getTimetoExpirationInHoursFromDays(timeToExpiration)
-
-        iv = 0
-        if instrumentType == KEY_CE :
-            c = mibian.BS([self.bnfSpotLtp,
-                        strike, 
-                        RISK_FREE_INTEREST_RATE, 
-                        timetoExpirationInHours], 
-                        callPrice = ltp)
-            iv = c.impliedVolatility
-        elif instrumentType == KEY_PE:    
-            c = mibian.BS([self.bnfSpotLtp,
-                        strike, 
-                        RISK_FREE_INTEREST_RATE, 
-                        timetoExpirationInHours], 
-                        putPrice = ltp)
-            iv = c.impliedVolatility
-
-        
-        c = mibian.BS([self.bnfSpotLtp, 
-                        strike, 
-                        RISK_FREE_INTEREST_RATE, 
-                        timetoExpirationInHours], 
-                        volatility = iv)
-        
-        """ SL based on future IV drop 
-        ivDropbuffer = (c.vega / 100) * 25
-        slSpecial = slNormal + ((c.vega / 100) * 25)"""
-
-        delta = float(c.callDelta) if type != KEY_SHORT else float(c.putDelta)
-        slPoints = abs(round(SLSpotPoints * delta, 2))
-        qty = Utils.Utilities.getPositionsSizing(slPoints, maxRiskPerTrade,lotSize, debug = statics.DEBUG_MODE)
-
-
-        if qty == 0 :
+        if postionSize == 0 :
             end_time = time.time()
             time_taken = end_time - start_time
             print(f"Time taken to Place order: {time_taken} seconds")
@@ -409,7 +388,7 @@ class KiteApi() :
             self.executionRaceLock.release() 
             return ORDER_ERROR_0_POSITION_SIZING
 
-        # Place an order
+        """# Place an order
         try:
             self.currentTradePosition = Trade(tickerToken, type, stg, tradingSymbol, qty, ltp, slPoints, strike)
             self.currentTradePosition.tradeEntryStatus = INITIATED
@@ -462,9 +441,13 @@ class KiteApi() :
         self.executionRaceLock.release() 
         end_time = time.time()
         time_taken = end_time - start_time
-        print(f"Time taken to Place order: {time_taken} seconds")
+        print(f"Time taken to Place order: {time_taken} seconds")"""
         return ORDER_PLACED 
     
+
+    def positionSizeAdjustedToMargin(self,strike, hedgeStrike, stoploss_legs, riskPerTrade) : 
+        postionSize = Utils.Utilities.getPositionsSizing(stoploss_legs, riskPerTrade, 25, statics.DEBUG_MODE)
+        
 
     def exitCurrentPosition(self) :
         # Place an order

@@ -10,6 +10,7 @@ from Utils.Utilities import WorkerThread,WorkerLoopedThread,TickLooperThread
 import Utils.StaticVariables as statics
 import time
 import threading 
+from collections import Counter
 from Utils import Utilities
 
 cssBtnEnabled = "background-color: #F3EF52;""color: #27292F;""border-radius: 15px;"
@@ -144,9 +145,6 @@ class TradeWindow(QMainWindow):
         self.overlay_frame.hide()
 
         ## initialise Button and its funtions
-        self.window.btn_aggresive.clicked.connect(self.clickedAggresive)
-        self.window.btn_defensive.clicked.connect(self.clickedDefensive)
-        self.window.btn_bounce.clicked.connect(self.clickedBounce)
         self.window.btn_long.clicked.connect(self.clickedLong)
         self.window.btn_short.clicked.connect(self.clickedShort)
         self.window.btn_editrisk.clicked.connect(self.clickedEditRisk)
@@ -180,9 +178,7 @@ class TradeWindow(QMainWindow):
 
         #inititalise Startup Parameters
         self.autoTrailing = False
-        self.clickedBounce()
         self.clickedLong()
-        self.clickedAutoTrail()
         self.window.spinner_ticker.addItem("BANKNIFTY")
         self.updateLabelMtMAmount(round(KiteApi.ins().finalPnL, 2))
 
@@ -191,8 +187,8 @@ class TradeWindow(QMainWindow):
         self.enableOptionsRifleUi()
         self.updateStatusBar()
 
-        self.riskPerTrade = 5000
-        self.window.et_risk.setText("5000")
+        self.riskPerTrade = 7500
+        self.window.et_risk.setText("7500")
         self.window.et_risk.setEnabled(False)
         self.window.btn_editrisk.setIcon(QIcon('icons/btn_edit_risk.png'))
         self.window.et_risk.setStyleSheet(cssEtEditRiskDisabled)
@@ -312,6 +308,7 @@ class TradeWindow(QMainWindow):
         stoploss_strike = round(int(self.window.spin_stoploss.text()) * strikeDelta,2)
         stoploss_legs = int(self.window.spin_stoploss.text()) * finalDelta
         postionSize = Utilities.getPositionsSizing(stoploss_legs, self.riskPerTrade, 25, statics.DEBUG_MODE)
+    
         self.window.label_position_size.setText("SL: " + str(stoploss_strike) + " " + "PS: " + str(postionSize))
 
     def clickedAutoTrail(self) : 
@@ -408,6 +405,16 @@ class TradeWindow(QMainWindow):
 
         self.window.label_spot.setText(str(KiteApi.ins().bnfSpotLtp))
         self.window.label_futures.setText(str(KiteApi.ins().bnfLtp))
+
+        strikeListUpdated = Utilities.getOTMStrikeList(self.tradeType, KiteApi.ins().bnfSpotLtp)
+        if Counter(KiteApi.ins().strikeList) != Counter(strikeListUpdated) : 
+            KiteApi.ins().strikeList = strikeListUpdated
+            self.window.cb_strike.clear()
+            self.window.cb_strike_hedge.clear()
+            self.window.cb_strike.addItems(KiteApi.ins().strikeList)
+            self.window.cb_strike_hedge.addItems(KiteApi.ins().strikeList)
+            print('StrikeListUpdated')
+
 
         if KiteApi.ins().currentTradePosition is not None :
             trade = KiteApi.ins().currentTradePosition
