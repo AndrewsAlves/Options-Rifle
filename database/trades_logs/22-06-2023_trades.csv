@@ -1,0 +1,3 @@
+ticker_token,trade_type,strategy,ticker_symbol,qty,entry_time,entry_price,exit_time,exit_price,pnl,intented_entry_price,intented_exit_price,stoploss,trade_high_price,trade_low_price,tag,notes,debug
+11297026,long,bounce,BANKNIFTY2362243900CE,100,2023-06-22 13:46:06.729842,184.09,2023-06-22 13:48:43.600384,176.2,-789.0,183.2,174.35,120.71,183.2,164.75,,,False
+11297794,short,bounce,BANKNIFTY2362244000PE,75,2023-06-22 14:20:03.298007,151.2,2023-06-22 14:27:36.979616,233.1,6142.5,152.55,230.6,72.47,233.05,151.4,,,False
