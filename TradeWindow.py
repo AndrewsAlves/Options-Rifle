@@ -309,7 +309,7 @@ class TradeWindow(QMainWindow):
         stoploss_legs = int(self.window.spin_stoploss.text()) * finalDelta
         postionSize = Utilities.getPositionsSizing(stoploss_legs, self.riskPerTrade, 25, statics.DEBUG_MODE)
     
-        self.window.label_position_size.setText("SL: " + str(stoploss_strike) + " " + "PS: " + str(postionSize) + "LS: " + str(postionSize/25))
+        self.window.label_position_size.setText("Risk : " + str(stoploss_strike * postionSize) + " SL: " + str(stoploss_strike) + " " + "\nPS: " + str(postionSize) + " " + "LS: " + str(postionSize/25))
 
     def clickedAutoTrail(self) : 
 
