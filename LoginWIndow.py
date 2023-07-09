@@ -11,6 +11,7 @@ from PySide6.QtCore import QThread, Signal
 from TradeWindow import TradeWindow
 from KiteApi import KiteApi
 from Utils.Utilities import WorkerThread
+from Utils import Utilities
 import time 
 
 

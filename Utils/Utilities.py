@@ -3,6 +3,15 @@ import datetime as dt
 import time
 import math
 import requests
+import os, sys
+
+def resourcePath(relativePath) : 
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath('.')
+
+    return os.path.join(base_path, relativePath)
 
 class WorkerThread(QThread):
     finished = Signal(str)

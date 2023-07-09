@@ -22,7 +22,7 @@ class OptionsRifleMain() :
         if OptionsRifleMain.__instance is None:
             OptionsRifleMain.__instance = OptionsRifleMain()
             return OptionsRifleMain.__instance
-
+  
 if __name__ == "__main__": 
 
     print ("Starting Application")
