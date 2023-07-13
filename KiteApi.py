@@ -60,7 +60,6 @@ class KiteApi() :
     __instance = None
 
     def __init__(self) : 
-        self.kite = KiteConnect(api_key=API_KEY, timeout= 10)    
         self.localRequirmentList = None
         self.upcomingFutureExpiry = None
         self.upcomingOptionsExpiry = None
@@ -86,11 +85,16 @@ class KiteApi() :
         webbrowser.open_new(self.kite.login_url())
         return 
     
+    def initialiseKite(self, apiKey, apiSecret) : 
+        self.apiKey = apiKey
+        self.apiSecret = apiSecret
+        self.kite = KiteConnect(api_key=self.apiKey, timeout= 10)    
+
     def generateSession(self, requestToken) : 
-        data = self.kite.generate_session(requestToken, api_secret=API_SECRET)
+        data = self.kite.generate_session(requestToken, api_secret= self.apiSecret)
         access_token = data["access_token"]
         self.kite.set_access_token(access_token)
-        self.ticker = KiteTicker(API_KEY, access_token=access_token, reconnect=True, reconnect_max_delay=5,reconnect_max_tries=100,connect_timeout=300)
+        self.ticker = KiteTicker(self.apiKey, access_token=access_token, reconnect=True, reconnect_max_delay=5,reconnect_max_tries=100,connect_timeout=300)
         print("Request Token : " + requestToken)
         print("Access Token : " + access_token)
         return

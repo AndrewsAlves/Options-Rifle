@@ -71,12 +71,20 @@ class LoginWindow(QMainWindow) :
             print(f"Cannot open {ui_file_name}: {ui_file.errorString()}")
             sys.exit(-1)
 
+
         self.loader = QUiLoader()
         self.window = self.loader.load(ui_file)
         ui_file.close()
         self.window.setWindowIcon(QIcon("icons/icon_options_rifle_small.png"))
         self.window.setWindowTitle("Login to a Zerodha")
         self.window.btn_login.clicked.connect(self.clickedLogintoZerodha)
+        self.window.btn_login_angel.clicked.connect(self.clickedLogintoAngelOne)
+
+        self.window.frame_login_zerodha_api.hide()
+
+    def initialiseFrameZerodhaApi(self) : 
+        self.window.frame_login_zerodha_api.show()
+        self.window.btn_login_zerodha_api.clicked.connect(self.clickedLogin)
 
     @staticmethod
     def get_instance():
@@ -93,6 +101,21 @@ class LoginWindow(QMainWindow) :
     def close(self) :
         self.window.close()    
     
+    def clickedLogintoZerodha(self) : 
+        self.initialiseFrameZerodhaApi()
+
+    def clickedLogintoAngelOne(self) : 
+        self.loginUser()
+
+    
+    ###----------------------------------------------------------###
+    ### ZERODHA LOGIN 
+    ###----------------------------------------------------------###
+
+    def clickedLogin(self) : 
+        KiteApi.ins().initialiseKite(self.window.lineedit_apikey.text(), self.window.lineedit_api_secret.text())
+        self.loginUser()
+
     def loginUser(self) : 
         KiteApi.ins().openLoginUrl()
         auth_server_thread.finished.connect(self.loginFlowFinished)
@@ -112,6 +135,6 @@ class LoginWindow(QMainWindow) :
         self.close()
         return 
 
-    def clickedLogintoZerodha(self) : 
-        self.loginUser()
+
+
 
