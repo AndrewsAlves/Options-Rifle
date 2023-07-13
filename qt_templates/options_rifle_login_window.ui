@@ -42,7 +42,7 @@
    <widget class="QPushButton" name="btn_login">
     <property name="geometry">
      <rect>
-      <x>130</x>
+      <x>62</x>
       <y>110</y>
       <width>131</width>
       <height>41</height>
@@ -50,7 +50,7 @@
     </property>
     <property name="font">
      <font>
-      <family>Graphie</family>
+      <family>Inter</family>
      </font>
     </property>
     <property name="styleSheet">
@@ -77,6 +77,27 @@
     </property>
     <property name="alignment">
      <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btn_login_angel">
+    <property name="geometry">
+     <rect>
+      <x>211</x>
+      <y>110</y>
+      <width>131</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>Inter</family>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background:#F3EF52;</string>
+    </property>
+    <property name="text">
+     <string>Login To Angel One</string>
     </property>
    </widget>
   </widget>
