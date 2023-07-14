@@ -112,6 +112,8 @@ def getStrikePrice(ltp, CeOrPe = "CE" , ItmOTmStrikeLevel = 1, optionStrikeInter
 
 def getPositionsSizing(stoplossPoints, risk_per_trade, lotSize, debug = True) :
 
+    return lotSize
+
     if debug :
         # min lot size to test 
         return lotSize
