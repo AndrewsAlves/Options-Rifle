@@ -15,6 +15,16 @@ import logging
 from requests.exceptions import ReadTimeout
 
 
+""" Andy APi key
+API_KEY= "yzczdzxsmw9w9tq9"
+API_SECRET = "2k7oo9x1w0xl5g9789wl8j6v4u03lq0x"
+"""
+
+""" LEO API KEY
+API_KEY= "mvuzpbog2xvrt4o8"
+API_SECRET = "t0087hudryiezq4zf890bl2yuhvc0jz6"
+"""
+
 API_KEY= "yzczdzxsmw9w9tq9"
 API_SECRET = "2k7oo9x1w0xl5g9789wl8j6v4u03lq0x"
 
@@ -168,7 +178,7 @@ class KiteApi() :
 
         todayDateStr = dt.date.today().strftime("%d-%m-%Y")
         filename = todayDateStr + "_trades.csv"
-        tradeFilePath = "G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\trades_logs\\"+filename
+        tradeFilePath = "database/trades_logs/" + filename
 
         if os.path.exists(tradeFilePath) :
            tradeDf =  pd.read_csv(tradeFilePath, parse_dates = ['entry_time', 'exit_time'])
@@ -186,7 +196,7 @@ class KiteApi() :
         if now > eight_thirty_am:
             filename = todayDateStr+"_required_instrument_list.csv"
 
-        requirmentsFilePath = "G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\instrument_list\\"+filename
+        requirmentsFilePath = "database/instrument_list/"+filename
 
         ### Get todays trades if file exits
 
@@ -231,7 +241,7 @@ class KiteApi() :
         self.upcomingOptionsExpiry = pd.to_datetime(self.upcomingOptionsExpiry)
         self.upcomingFutureExpiry = pd.to_datetime(self.upcomingFutureExpiry)
         
-        self.localRequirmentList.to_csv("G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\instrument_list\\" + filename, index= False)
+        self.localRequirmentList.to_csv("database/instrument_list/" + filename, index= False)
         
         return result
     
@@ -334,7 +344,7 @@ class KiteApi() :
 
         ce_or_pe = KEY_CE if type != KEY_SHORT else KEY_PE
 
-        strike_diff = -1
+        strike_diff = -2
         if statics.DEBUG_MODE :
             strike_diff = 7
 
@@ -536,7 +546,7 @@ class KiteApi() :
 
         todayDateStr = dt.date.today().strftime("%d-%m-%Y")
         filename = todayDateStr + "_trades.csv"
-        tradeFilePath = "G:\\andyvoid\\projects\\andyvoid_tools\\options_rifle\\database\\trades_logs\\"+filename
+        tradeFilePath = "database/trades_logs/"+filename
         tradesDf.to_csv(tradeFilePath, index = False)
 
 

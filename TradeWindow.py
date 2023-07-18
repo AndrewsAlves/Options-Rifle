@@ -182,7 +182,7 @@ class TradeWindow(QMainWindow):
         self.autoTrailing = False
         self.clickedBounce()
         self.clickedLong()
-        self.clickedAutoTrail()
+        #self.clickedAutoTrail()
         self.window.spinner_ticker.addItem("BANKNIFTY")
         self.updateLabelMtMAmount(round(KiteApi.ins().finalPnL, 2))
 
@@ -191,8 +191,8 @@ class TradeWindow(QMainWindow):
         self.enableOptionsRifleUi()
         self.updateStatusBar()
 
-        self.riskPerTrade = 5000
-        self.window.et_risk.setText("5000")
+        self.riskPerTrade = 2500
+        self.window.et_risk.setText("2500")
         self.window.et_risk.setEnabled(False)
         self.window.btn_editrisk.setIcon(QIcon('icons/btn_edit_risk.png'))
         self.window.et_risk.setStyleSheet(cssEtEditRiskDisabled)
