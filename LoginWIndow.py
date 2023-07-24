@@ -12,7 +12,12 @@ from TradeWindow import TradeWindow
 from KiteApi import KiteApi
 from Utils.Utilities import WorkerThread
 from Utils import Utilities
+from Utils import StaticVariables as statics
 import time 
+
+#smart connect libs
+from SmartApi import SmartConnect #or from SmartApi.smartConnect import SmartConnect
+import pyotp
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -105,15 +110,15 @@ class LoginWindow(QMainWindow) :
         self.initialiseFrameZerodhaApi()
 
     def clickedLogintoAngelOne(self) : 
-        self.loginUser()
-
+        self.clickedLoginAngel()
     
     ###----------------------------------------------------------###
     ### ZERODHA LOGIN 
     ###----------------------------------------------------------###
 
     def clickedLogin(self) : 
-        KiteApi.ins().initialiseKite(self.window.lineedit_apikey.text(), self.window.lineedit_api_secret.text())
+        #KiteApi.ins().initialiseKite(self.window.lineedit_apikey.text(), self.window.lineedit_api_secret.text())
+        KiteApi.ins().initialiseKite(statics.API_KEY, statics.API_SECRET)
         self.loginUser()
 
     def loginUser(self) : 
@@ -134,6 +139,27 @@ class LoginWindow(QMainWindow) :
         self.userInterface.show()
         self.close()
         return 
+    
+
+    ###----------------------------------------------------------###
+    ### ANGEL ONE LOGIN 
+    ###----------------------------------------------------------###
+
+    def clickedLoginAngel(self) : 
+        smartApi = SmartConnect(statics.ANGEL_API_KEY)
+        totp = pyotp.TOTP(statics.ANGEL_QR_CODE).now()
+        #login API
+        data = smartApi.generateSession(statics.ANGEL_CLIENT_ID, statics.ANGEL_PASSWORD, totp)
+        print(data)
+        authToken = data['data']['jwtToken']
+        refreshToken= data['data']['refreshToken']
+
+        #fetch the feedtoken
+        feedToken = smartApi.getfeedToken()
+
+        #fetch User Profile
+        userProfile = smartApi.getProfile(refreshToken)
+
 
 
 

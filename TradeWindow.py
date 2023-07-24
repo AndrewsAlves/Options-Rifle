@@ -63,6 +63,9 @@ AGGRESIVE = "aggresive"
 DEFENSIVE = "defensive"
 BOUNCE = "bounce"
 
+MANUAL = "MANUAL"
+AUTOPRO = "AUTOPRO"
+
 LONG = "long"
 SHORT = "short"
 
@@ -70,7 +73,6 @@ ORDER_PLACED = "orderplaced"
 ORDER_ERROR = "ordererror"
 ORDER_ERROR_0_POSITION_SIZING = "ordererror_0_position_sizing"
 ORDER_ERROR_READ_TIMEOUT = "readtimeout"
-
 
 EXECUTED = 1
 PENDING = -1
@@ -105,9 +107,6 @@ class TradeWindow(QMainWindow):
         self.tickLooperraceLock = threading.Lock()
         self.orderUpdateraceLock = threading.Lock()
 
-        self.greeksThread = WorkerLoopedThread(KiteApi.ins().deriveOptionsGreeks, loopsEverySec = 1, 
-                                               startedMessage = "Started Greeks Calucations", 
-                                               stoppedMessage = "Stopped Greeks Calculations")
         self.ticksThread = TickLooperThread(self.tickLooperThreadFunc, loopsEverySec = 0.25,
                                             startedMessage = "Started Ticks process", 
                                                stoppedMessage = "Stopped Ticks process")
@@ -144,9 +143,9 @@ class TradeWindow(QMainWindow):
         self.overlay_frame.hide()
 
         ## initialise Button and its funtions
-        self.window.btn_aggresive.clicked.connect(self.clickedAggresive)
-        self.window.btn_defensive.clicked.connect(self.clickedDefensive)
-        self.window.btn_bounce.clicked.connect(self.clickedBounce)
+        self.window.btn_manual.clicked.connect(self.clickedManual)
+        self.window.btn_auto_pro.clicked.connect(self.clickedAutoPro)
+
         self.window.btn_long.clicked.connect(self.clickedLong)
         self.window.btn_short.clicked.connect(self.clickedShort)
         self.window.btn_editrisk.clicked.connect(self.clickedEditRisk)
@@ -154,7 +153,9 @@ class TradeWindow(QMainWindow):
         self.window.btn_auto_t.clicked.connect(self.clickedAutoTrail)
         self.window.btn_auto_t.setStyleSheet(cssBtnAutoTrail)
 
-        self.window.spin_stoploss.setMinimum(5)
+        self.window.spin_m_stoploss.setMinimum(5)
+        self.window.spin_a_stoploss.setMinimum(5)
+
 
         ## SET BUTTONGS AND ITS FUNCTIONS FOR TRADE FRAME 
         self.window.btn_decrease_sl.clicked.connect(self.clickeddedcreaseSL)
@@ -180,10 +181,11 @@ class TradeWindow(QMainWindow):
 
         #inititalise Startup Parameters
         self.autoTrailing = False
-        self.clickedBounce()
+        self.clickedManual()
         self.clickedLong()
         self.clickedAutoTrail()
         self.window.spinner_ticker.addItem("BANKNIFTY")
+        self.window.spinner_expiry.addItem("FEB 18")
         self.updateLabelMtMAmount(round(KiteApi.ins().finalPnL, 2))
 
         ##self.window.spinner_ticker.addItem("NIFTY")
@@ -235,35 +237,30 @@ class TradeWindow(QMainWindow):
         self.window.MainWinodw2.setEnabled(True)
         self.overlay_frame.hide()
 
-    def clickedAggresive(self):
-        self.window.btn_aggresive.setStyleSheet(cssBtnEnabled)
-        self.window.btn_defensive.setStyleSheet(cssBtnDisabled)
-        self.window.btn_bounce.setStyleSheet(cssBtnDisabled )
-        self.stg = AGGRESIVE
+    def clickedManual(self):
+        self.window.btn_manual.setStyleSheet(cssBtnEnabled)
+        self.window.btn_auto_pro.setStyleSheet(cssBtnDisabled)
+        self.window.frame_auto.hide()
+        self.window.frame_manual.show()
+
+        self.executionStg = MANUAL
         return
 
-    def clickedDefensive(self) :
-        self.window.btn_aggresive.setStyleSheet(cssBtnDisabled)
-        self.window.btn_defensive.setStyleSheet(cssBtnEnabled)
-        self.window.btn_bounce.setStyleSheet(cssBtnDisabled)
-        self.stg = DEFENSIVE
-
+    def clickedAutoPro(self) :
+        self.window.btn_manual.setStyleSheet(cssBtnDisabled)
+        self.window.btn_auto_pro.setStyleSheet(cssBtnEnabled)
+        self.window.frame_auto.show()
+        self.window.frame_manual.hide()
+        self.executionStg = AUTOPRO
         return
-
-    def clickedBounce(self):
-        self.window.btn_aggresive.setStyleSheet(cssBtnDisabled)
-        self.window.btn_defensive.setStyleSheet(cssBtnDisabled)
-        self.window.btn_bounce.setStyleSheet(cssBtnEnabled)
-        self.stg = BOUNCE
-        return           
 
     def clickedLong(self):
 
         self.tradeType = LONG
         self.window.btn_long.setStyleSheet(cssBtnlongEnabled)
         self.window.btn_short.setStyleSheet(cssBtnShortDisabled)
-        self.window.btn_long.setIcon(QIcon('icons/btn_long_enabled.png'))
-        self.window.btn_short.setIcon(QIcon('icons/btn_short_disabled.png'))
+        self.window.btn_long.setIcon(QIcon('icons/btn_ce_enabled.png'))
+        self.window.btn_short.setIcon(QIcon('icons/btn_pe_disabled.png'))
 
         return          
     def clickedShort(self):
@@ -271,8 +268,8 @@ class TradeWindow(QMainWindow):
         self.tradeType = SHORT
         self.window.btn_long.setStyleSheet(cssBtnlongDisabled)
         self.window.btn_short.setStyleSheet(cssBtnShortEnabled)
-        self.window.btn_long.setIcon(QIcon('icons/btn_long_disabled.png'))
-        self.window.btn_short.setIcon(QIcon('icons/btn_short_enabled.png'))
+        self.window.btn_long.setIcon(QIcon('icons/btn_ce_disabled.png'))
+        self.window.btn_short.setIcon(QIcon('icons/btn_pe_enabled.png'))
         return 
     
     
@@ -307,9 +304,22 @@ class TradeWindow(QMainWindow):
             self.autoTrailing = True
             self.window.btn_auto_t.setIcon(QIcon('icons/btn_auto_trail_on.png'))
 
+    def getSpotLabelUi(self) :
+        if self.executionStg is MANUAL : return self.window.label_m_spot 
+        else : return self.window.label_a_spot 
+
+    def getFuturesLabelUi(self) :
+        if self.executionStg is MANUAL : return self.window.label_m_futures 
+        else : return self.window.label_a_futures 
+
     
     def executionThreadFunc(self) :
-        slPrice = self.window.spin_stoploss.value()
+
+        if self.executionStg is MANUAL : 
+            slPrice = self.window.spin_m_stoploss.value()
+        else : 
+            slPrice = self.window.spin_a_stoploss.value()
+
         self.executeButtonUIupdate(1)
         status = KiteApi.ins().executeTrade(self.tradeType, slPrice, self.riskPerTrade,self.stg)
         if status == ORDER_PLACED :
@@ -380,6 +390,8 @@ class TradeWindow(QMainWindow):
 
         self.window.label_MTM.setText(rewardStr)
 
+    
+
     def updatePriceLabels(self) :
 
         strike_diff = -2
@@ -394,7 +406,9 @@ class TradeWindow(QMainWindow):
 
         #preDiff = round(KiteApi.ins().bnfLtp - KiteApi.ins().bnfSpotLtp, 1)
 
-        self.window.label_spot.setText(str(KiteApi.ins().bnfSpotLtp))
+        self.getSpotLabelUi().setText(str(KiteApi.ins().bnfSpotLtp))
+        self.getFuturesLabelUi().setText(str(KiteApi.ins().bnfLtp))
+
 
         if KiteApi.ins().currentTradePosition is not None :
             trade = KiteApi.ins().currentTradePosition
@@ -613,17 +627,6 @@ class TradeWindow(QMainWindow):
     #######   KITE CONNECT       ############
     ####### ___________________ ############ 
 
-    def connectNewWebsocket(self) :
-        KiteApi.ins().connetInitialTickerSockets(self.onTicks,
-                                                         self.onConnect,
-                                                         self.onClose,
-                                                         self.onError,
-                                                         self.onMessage,
-                                                         self.onReConnect,
-                                                         self.onNoReConnect,
-                                                         self.onOrderUpdate)
-        
-
     def onTicks(self, ws, ticks) :
         # Callback to receive ticks.
         #logging.debug("Ticks: {}".format(ticks))
@@ -634,7 +637,6 @@ class TradeWindow(QMainWindow):
         return
     
         
-
     def tickLooperThreadFunc(self, ticks) :
         self.tickLooperraceLock.acquire()
         start_time = time.time()
