@@ -14,6 +14,8 @@ from Utils.Utilities import WorkerThread
 from Utils import Utilities
 from Utils import StaticVariables as statics
 import time 
+from BrokerManager import BrokerManager
+from DBManager import DBManager
 
 #smart connect libs
 from SmartApi import SmartConnect #or from SmartApi.smartConnect import SmartConnect
@@ -57,7 +59,7 @@ class AuthServerThread(QThread):
 
 server = HTTPServer(("localhost", 8000), RequestHandler)
 auth_server_thread = AuthServerThread()       
-getInstrumentThread = WorkerThread(KiteApi.ins().getInstrumentsAndTrades)
+getInstrumentThread = WorkerThread(DBManager.i().getInstrumentsAndTrades)
 
                 ### LOGIN WINDOW ###
 ###--------------------------------------------------------###
@@ -123,12 +125,13 @@ class LoginWindow(QMainWindow) :
 
     def loginUser(self) : 
         KiteApi.ins().openLoginUrl()
-        auth_server_thread.finished.connect(self.loginFlowFinished)
+        auth_server_thread.finished.connect(self.loginFlowFinishedZerodha)
         auth_server_thread.start()    
     
-    def loginFlowFinished(self):
+    def loginFlowFinishedZerodha(self):
      print("Login Flow Finished")
      ## Start getting everyday Instruments data and store it in local database
+     BrokerManager.ins().selectedBroker = statics.ZERODHA
      self.window.label_process.setText("Getting Instrument List for the Day...")   
      getInstrumentThread.finished.connect(self.handleGetInstrumentResult)
      getInstrumentThread.start()

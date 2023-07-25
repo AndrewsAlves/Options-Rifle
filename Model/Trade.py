@@ -42,14 +42,13 @@ class Trade() :
 
     """
 
-    def __init__(self, tickerToken, tradeType, stg, sym, qty, ltp, slPoints, strike) :
+    def __init__(self, tickerToken, tradeType, sym, qty, ltp, slPoints, strike) :
        self.tradeEntryStatus = NOT_INITIATED
        self.tradeExitStatus = NOT_INITIATED
        self.entryOrderId =  0
        self.exitOrderId = 0
        self.tickerToken = tickerToken
        self.tradeType = tradeType
-       self.strategy = stg
 
        ce_or_pe = KEY_CE if tradeType != KEY_SHORT else KEY_PE
        self.strikeStr = str(strike) + " " + ce_or_pe
@@ -176,7 +175,6 @@ class Trade() :
         tradeDic = {}
         tradeDic['ticker_token'] = self.tickerToken
         tradeDic['trade_type'] = self.tradeType
-        tradeDic['strategy'] = self.strategy
         tradeDic['ticker_symbol'] = self.tickerSymbol
         tradeDic['qty'] = self.qty
         tradeDic['entry_time'] = self.tradeEntryTime

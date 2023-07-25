@@ -11,6 +11,7 @@ import Utils.StaticVariables as statics
 import time
 import threading 
 from Utils import Utilities
+from DBManager import DBManager
 
 cssBtnEnabled = "background-color: #F3EF52;""color: #27292F;""border-radius: 15px;"
 cssBtnDisabled = "color: #757575;" "background-color: #27292F;" "border-radius: 15px;" "border: 2px solid #9F9F9F;"
@@ -186,7 +187,7 @@ class TradeWindow(QMainWindow):
         self.clickedAutoTrail()
         self.window.spinner_ticker.addItem("BANKNIFTY")
         self.window.spinner_expiry.addItem("FEB 18")
-        self.updateLabelMtMAmount(round(KiteApi.ins().finalPnL, 2))
+        self.updateLabelMtMAmount(round(DBManager.i().finalPnL, 2))
 
         ##self.window.spinner_ticker.addItem("NIFTY")
 
@@ -295,7 +296,7 @@ class TradeWindow(QMainWindow):
     
     def clickedAutoTrail(self) : 
 
-        if KiteApi.ins().currentTradePosition != None : return
+        if DBManager.i().currentTradePosition != None : return
     
         if self.autoTrailing : 
             self.autoTrailing = False 
@@ -313,6 +314,7 @@ class TradeWindow(QMainWindow):
         else : return self.window.label_a_futures 
 
     
+
     def executionThreadFunc(self) :
 
         if self.executionStg is MANUAL : 
@@ -321,7 +323,7 @@ class TradeWindow(QMainWindow):
             slPrice = self.window.spin_a_stoploss.value()
 
         self.executeButtonUIupdate(1)
-        status = KiteApi.ins().executeTrade(self.tradeType, slPrice, self.riskPerTrade,self.stg)
+        status = DBManager.i().enterTrade(self.tradeType, slPrice, self.riskPerTrade)
         if status == ORDER_PLACED :
             self.updateStatusBar("Entry Order Placed!", delayReset= True)
         elif status == ORDER_ERROR_READ_TIMEOUT:
@@ -339,12 +341,12 @@ class TradeWindow(QMainWindow):
             self.executeButtonUIupdate(0)
 
     def checkResponseFromEntryOrderupdate(self) :
-        if KiteApi.ins().currentTradePosition.tradeEntryStatus == NO_RESPONSE :
+        if DBManager.i().currentTradePosition.tradeEntryStatus == NO_RESPONSE :
             self.updateStatusBar("Kite order placing error... ", delayReset= True)
             self.executeButtonUIupdate(0)
 
     def checkResponseFromExitOrderupdate(self) :
-        if KiteApi.ins().currentTradePosition.tradeExitStatus == NO_RESPONSE :
+        if DBManager.i().currentTradePosition.tradeExitStatus == NO_RESPONSE :
             self.updateStatusBar("Kite order placing error... ", delayReset= True)
             self.exitButtonUIupdate(0)
 
@@ -398,30 +400,30 @@ class TradeWindow(QMainWindow):
         if statics.DEBUG_MODE :
             strike_diff = 7
 
-        CEStrike = Utilities.getStrikePrice(KiteApi.ins().bnfSpotLtp,KEY_CE, strike_diff)
-        PEStrike = Utilities.getStrikePrice(KiteApi.ins().bnfSpotLtp,KEY_PE, strike_diff)
+        CEStrike = Utilities.getStrikePrice(DBManager.i().bnfSpotLtp,KEY_CE, strike_diff)
+        PEStrike = Utilities.getStrikePrice(DBManager.i().bnfSpotLtp,KEY_PE, strike_diff)
 
         self.window.label_call_strike.setText(str(CEStrike))
         self.window.label_put_strike.setText(str(PEStrike))        
 
         #preDiff = round(KiteApi.ins().bnfLtp - KiteApi.ins().bnfSpotLtp, 1)
 
-        self.getSpotLabelUi().setText(str(KiteApi.ins().bnfSpotLtp))
-        self.getFuturesLabelUi().setText(str(KiteApi.ins().bnfLtp))
+        self.getSpotLabelUi().setText(str(DBManager.i().bnfSpotLtp))
+        self.getFuturesLabelUi().setText(str(DBManager.i().bnfLtp))
 
 
-        if KiteApi.ins().currentTradePosition is not None :
-            trade = KiteApi.ins().currentTradePosition
+        if DBManager.i().currentTradePosition is not None :
+            trade = DBManager.i().currentTradePosition
             self.window.label_trade_ltp.setText(str(trade.ltp))
-            unRealisedMtm = KiteApi.ins().finalPnL + trade.unRealisedProfit
+            unRealisedMtm = DBManager.i().finalPnL + trade.unRealisedProfit
             if trade.tradeEntryStatus == EXECUTED :
                 self.updateLabelMtMAmount(round(unRealisedMtm, 2))
                 self.updateLabelUnrealisedRewardAmount(trade.unRealisedProfit, 
                                                        trade.unRealisedProfitInPoints, 
                                                        trade.getHitRewardPointsStr())
-                self.updateLabelRiskAmount(KiteApi.ins().currentTradePosition.riskAmount, 
-                                   KiteApi.ins().currentTradePosition.stoplossPoints, 
-                                   KiteApi.ins().currentTradePosition.initialSLPoints)
+                self.updateLabelRiskAmount(DBManager.i().currentTradePosition.riskAmount, 
+                                   DBManager.i().currentTradePosition.stoplossPoints, 
+                                   DBManager.i().currentTradePosition.initialSLPoints)
 
     
     """
@@ -434,7 +436,7 @@ class TradeWindow(QMainWindow):
 
     def entryOrderExecuted(self) :
 
-        trade = KiteApi.ins().currentTradePosition
+        trade = DBManager.i().currentTradePosition
 
         trade.setAutoTrailing(self.autoTrailing)
 
@@ -486,26 +488,26 @@ class TradeWindow(QMainWindow):
 
         if self.autoTrailing: return
 
-        KiteApi.ins().currentTradePosition.incrementSl()
-        self.window.et_stoploss.setText(str(KiteApi.ins().currentTradePosition.stoplossPrice))
-        self.updateLabelRiskAmount(KiteApi.ins().currentTradePosition.riskAmount, 
-                                   KiteApi.ins().currentTradePosition.stoplossPoints, 
-                                   KiteApi.ins().currentTradePosition.initialSLPoints)
+        DBManager.i().currentTradePosition.incrementSl()
+        self.window.et_stoploss.setText(str(DBManager.i().currentTradePosition.stoplossPrice))
+        self.updateLabelRiskAmount(DBManager.i().currentTradePosition.riskAmount, 
+                                   DBManager.i().currentTradePosition.stoplossPoints, 
+                                   DBManager.i().currentTradePosition.initialSLPoints)
         return
     
     def clickeddedcreaseSL(self) :
 
         if self.autoTrailing: return
 
-        if KiteApi.ins().currentTradePosition.stoplossPrice < 1 :
+        if DBManager.i().currentTradePosition.stoplossPrice < 1 :
             return
 
-        KiteApi.ins().currentTradePosition.decrementSl()
+        DBManager.i().currentTradePosition.decrementSl()
         
-        self.window.et_stoploss.setText(str(KiteApi.ins().currentTradePosition.stoplossPrice))
-        self.updateLabelRiskAmount(KiteApi.ins().currentTradePosition.riskAmount, 
-                                   KiteApi.ins().currentTradePosition.stoplossPoints,
-                                   KiteApi.ins().currentTradePosition.initialSLPoints)
+        self.window.et_stoploss.setText(str(DBManager.i().currentTradePosition.stoplossPrice))
+        self.updateLabelRiskAmount(DBManager.i().currentTradePosition.riskAmount, 
+                                   DBManager.i().currentTradePosition.stoplossPoints,
+                                   DBManager.i().currentTradePosition.initialSLPoints)
         return
     
     def clickedEditSL(self) :
@@ -517,10 +519,10 @@ class TradeWindow(QMainWindow):
              self.window.et_stoploss.setEnabled(False)
              self.window.btn_edit_sl.setIcon(QIcon('icons/btn_edit_sl.png'))
              self.window.et_stoploss.setStyleSheet(cssEtEditSlDisabled)
-             KiteApi.ins().currentTradePosition.setStoploss(int(self.window.et_stoploss.text()))
-             self.updateLabelRiskAmount(KiteApi.ins().currentTradePosition.riskAmount, 
-                                        KiteApi.ins().currentTradePosition.stoplossPoints,
-                                        KiteApi.ins().currentTradePosition.initialSLPoints)
+             DBManager.i().currentTradePosition.setStoploss(int(self.window.et_stoploss.text()))
+             self.updateLabelRiskAmount(DBManager.i().currentTradePosition.riskAmount, 
+                                        DBManager.i().currentTradePosition.stoplossPoints,
+                                        DBManager.i().currentTradePosition.initialSLPoints)
 
         else:
             ## edit risk
@@ -564,7 +566,7 @@ class TradeWindow(QMainWindow):
         return
     
     def clickedExitTrade(self) :
-        status = KiteApi.ins().exitCurrentPosition()
+        status = DBManager.i().exitCurrentPosition()
 
         if status == ORDER_PLACED :
             self.updateStatusBar("Exit Order Placed!", delayReset= True)
@@ -589,10 +591,10 @@ class TradeWindow(QMainWindow):
             self.orderStatusTimer.start()"""
 
     def exitOrderExecuted(self) :
-        KiteApi.ins().addLastTradeToTradesList()
-        KiteApi.ins().currentTradePosition = None
+        DBManager.i().addLastTradeToTradesList()
+        DBManager.i().currentTradePosition = None
 
-        self.updateLabelMtMAmount(round(KiteApi.ins().finalPnL, 2))
+        self.updateLabelMtMAmount(round(DBManager.i().finalPnL, 2))
         self.window.btn_execute.show()
         self.window.btn_execute.setEnabled(True)
         self.window.btn_execute.setText("Execute")
@@ -643,21 +645,21 @@ class TradeWindow(QMainWindow):
 
         for tick in ticks :
 
-            if tick['instrument_token'] == KiteApi.ins().getbnfSpotToken() :
-                KiteApi.ins().bnfSpotLtp = tick['last_price']
-            if tick['instrument_token'] == KiteApi.ins().getUpcomingbnfFutureToken() :
-                KiteApi.ins().bnfLtp = tick['last_price']
-            if KiteApi.ins().currentTradePosition is not None :
-                trade = KiteApi.ins().currentTradePosition
+            if tick['instrument_token'] == DBManager.i().getbnfSpotToken() :
+                DBManager.i().bnfSpotLtp = tick['last_price']
+            if tick['instrument_token'] == DBManager.i().getUpcomingbnfFutureToken() :
+                DBManager.i().bnfLtp = tick['last_price']
+            if DBManager.i().currentTradePosition is not None :
+                trade = DBManager.i().currentTradePosition
                 if tick['instrument_token'] == trade.tickerToken :
                     trade.updateLtp(tick['last_price'])
                     
-        KiteApi.ins().setLTPforRequiredTokens(ticks)
+        DBManager.i().setLTPforRequiredTokens(ticks)
 
-        if KiteApi.ins().currentTradePosition is not None :
-            trade = KiteApi.ins().currentTradePosition
+        if DBManager.i().currentTradePosition is not None :
+            trade = DBManager.i().currentTradePosition
             if trade.tradeEntryStatus == EXECUTED :
-                if KiteApi.ins().tokensLtp[trade.tickerToken] <= trade.stoplossPrice :
+                if DBManager.i().tokensLtp[trade.tickerToken] <= trade.stoplossPrice :
                     if trade.tradeExitStatus == NOT_INITIATED:
                         trade.tradeExitStatus = INITIATED
                         self.clickedExitTrade()
@@ -669,7 +671,7 @@ class TradeWindow(QMainWindow):
         self.tickLooperraceLock.release()
 
     def onConnect(self, ws, response) :
-        tokenList = KiteApi.ins().getAllRequiredInstrumentListTokens()
+        tokenList = DBManager.i().getAllRequiredInstrumentListTokens()
         ws.subscribe(tokenList)
         ws.set_mode(ws.MODE_LTP ,tokenList)
         return
@@ -707,8 +709,8 @@ class TradeWindow(QMainWindow):
     
     def onOrderUpdate(self, ws, data) :
         self.orderUpdateraceLock.acquire()
-        if KiteApi.ins().currentTradePosition is not None :
-            trade = KiteApi.ins().currentTradePosition
+        if DBManager.i().currentTradePosition is not None :
+            trade = DBManager.i().currentTradePosition
 
             if trade.tickerToken == data['instrument_token'] and data['transaction_type'] == BUY and trade.tradeEntryStatus != EXECUTED:
 
@@ -729,7 +731,7 @@ class TradeWindow(QMainWindow):
                     trade.updateTradeEntryStatus(CANCELLED, data['average_price'])
                     self.updateStatusBar(">>> Order Cancelled !", True)
                     print('ORDER UPDATE : >>> Entry Order Cancelled due to ' + data['status_message'])
-                    KiteApi.ins().currentTradePosition = None
+                    DBManager.i().currentTradePosition = None
                     self.executeButtonUIupdate(0)
                     self.window.label_no_position.show()
                     return
@@ -738,7 +740,7 @@ class TradeWindow(QMainWindow):
                     trade.updateTradeEntryStatus(REJECTED, data['average_price'])
                     self.updateStatusBar(">>> Rejected | " + data['status_message'], True)
                     print('ORDER UPDATE : >>> Entry Order Rejected due to ' + data['status_message'])
-                    KiteApi.ins().currentTradePosition = None
+                    DBManager.i().currentTradePosition = None
                     self.executeButtonUIupdate(0)
                     self.window.label_no_position.show()
                     return
@@ -796,12 +798,12 @@ class TradeWindow(QMainWindow):
         QApplication.processEvents()
         KiteApi.ins().sendEmptyOrderTokeepTheServerAlive()
 
-        try :
+        """try :
             ceDelta, peDelta = KiteApi.ins().getDeltaValues()
             print("Ce delta " + str(ceDelta))
             print("Pe delta " + str(abs(peDelta)))
         except :
-            print("error calculation delta")
+            print("error calculation delta")"""
 
         print("Processed QT events at", QDateTime.currentDateTime().toString())
 

@@ -12,6 +12,7 @@ import time
 from Model.Trade import Trade
 import logging
 from requests.exceptions import ReadTimeout
+from KiteApi import KiteApi
 
 class BrokerManager() : 
      
@@ -25,3 +26,24 @@ class BrokerManager() :
         if BrokerManager.__instance is None:
            BrokerManager.__instance = BrokerManager()
         return BrokerManager.__instance
+    
+    def getIntrumentList(self) : 
+        if self.selectedBroker == statics.ZERODHA : return KiteApi.ins().kite.instruments()
+
+    def enterTrade(self, trade) :
+        status = statics.ORDER_ERROR
+        if self.selectedBroker == statics.ZERODHA : 
+            status = KiteApi.ins().enterTrade(trade)
+
+        return status
+    
+    def exitTrade(self, trade) :
+        status = statics.ORDER_ERROR
+        if self.selectedBroker == statics.ZERODHA : 
+            status = KiteApi.ins().exitCurrentPosition(trade)
+
+        return status
+    
+    
+
+        
